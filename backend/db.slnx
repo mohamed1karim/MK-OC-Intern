@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="db.Context/db.Context.csproj" />
+  <Project Path="db.Service/db.Service.csproj" />
+</Solution>

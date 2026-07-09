@@ -1,0 +1,14 @@
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\obj\Debug\net10.0\db.Context.csproj.AssemblyReference.cache
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\obj\Debug\net10.0\db.Context.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\obj\Debug\net10.0\db.Context.AssemblyInfoInputs.cache
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\obj\Debug\net10.0\db.Context.AssemblyInfo.cs
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\obj\Debug\net10.0\db.Context.csproj.CoreCompileInputs.cache
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\bin\Debug\net10.0\db.Context.deps.json
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\bin\Debug\net10.0\db.Context.runtimeconfig.json
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\bin\Debug\net10.0\db.Context.dll
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\bin\Debug\net10.0\db.Context.pdb
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\obj\Debug\net10.0\db.Context.dll
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\obj\Debug\net10.0\refint\db.Context.dll
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\obj\Debug\net10.0\db.Context.pdb
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\obj\Debug\net10.0\db.Context.genruntimeconfig.cache
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\obj\Debug\net10.0\ref\db.Context.dll
