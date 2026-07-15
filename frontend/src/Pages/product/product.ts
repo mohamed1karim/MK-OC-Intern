@@ -8,12 +8,13 @@ import { ProductService, LOW_STOCK_THRESHOLD } from '../../app/services/product'
 import { Product } from '../../app/services/product';
 import { CartService } from '../../app/services/cart';
 import { AuthService } from '../../app/services/login';
-import { downloadCsv } from '../../app/utils/csv';
+import { downloadExcel } from '../../app/utils/excel';
+import { EgpCurrencyPipe } from '../../app/pipes/egp-currency.pipe';
 
 @Component({
  selector: 'app-products',
  templateUrl: './product.html',
- imports: [CommonModule, FormsModule, RouterLink, LoadingSpinner, StatusBadge],
+ imports: [CommonModule, FormsModule, RouterLink, LoadingSpinner, StatusBadge, EgpCurrencyPipe],
 })
 export class ProductsComponent implements OnInit {
  // Signals, not plain properties — this app has no zone.js, so a plain
@@ -126,7 +127,7 @@ export class ProductsComponent implements OnInit {
  // Exports exactly what's currently on screen (respecting the active
  // search/price/low-stock filters), not the full unfiltered list — what you
  // exported matches what you were looking at.
- exportCsv(): void {
+ exportExcel(): void {
   const headers = ['Name', 'Description', 'Price', 'Quantity', 'Added By', 'Created At', 'Updated At', 'Deleted'];
   const rows = this.filteredProducts().map((p) => [
    p.name,
@@ -138,6 +139,6 @@ export class ProductsComponent implements OnInit {
    p.updatedAt,
    p.isDeleted ? 'Yes' : 'No',
   ]);
-  downloadCsv('products.csv', headers, rows);
+  downloadExcel('products.xlsx', headers, rows);
  }
 }

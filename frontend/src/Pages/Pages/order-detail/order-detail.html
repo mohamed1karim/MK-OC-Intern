@@ -59,7 +59,7 @@
       </div>
       <div>
         <span class="block text-xs text-gray-500 dark:text-gray-400">Total</span>
-        <span class="font-semibold">{{ o.totalPrice | currency }}</span>
+        <span class="font-semibold">{{ o.totalPrice | egp }}</span>
       </div>
     </div>
 
@@ -78,8 +78,8 @@
           <tr *ngFor="let item of o.items" class="border-b border-border-subtle last:border-0">
             <td class="py-2">{{ item.productName }}</td>
             <td class="py-2 text-right">{{ item.quantity }}</td>
-            <td class="py-2 text-right">{{ item.unitPrice | currency }}</td>
-            <td class="py-2 text-right">{{ item.lineTotal | currency }}</td>
+            <td class="py-2 text-right">{{ item.unitPrice | egp }}</td>
+            <td class="py-2 text-right">{{ item.lineTotal | egp }}</td>
           </tr>
         </tbody>
       </table>

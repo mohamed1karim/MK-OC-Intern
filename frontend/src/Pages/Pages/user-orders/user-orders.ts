@@ -6,6 +6,7 @@ import { StatusBadge, StatusBadgeVariant } from '../../../app/shared/status-badg
 import { OrderService, Order } from '../../../app/services/orders';
 import { UsersService } from '../../../app/services/users';
 import { AuthService, User } from '../../../app/services/login';
+import { EgpCurrencyPipe } from '../../../app/pipes/egp-currency.pipe';
 
 // Lets an Admin/SuperAdmin drill into one specific person's order history
 // from the Users page. Uses the backend's involvingUserId filter, so this
@@ -15,7 +16,7 @@ import { AuthService, User } from '../../../app/services/login';
 // cancelled on top of anything they created.
 @Component({
   selector: 'app-user-orders',
-  imports: [CommonModule, RouterLink, LoadingSpinner, StatusBadge],
+  imports: [CommonModule, RouterLink, LoadingSpinner, StatusBadge, EgpCurrencyPipe],
   templateUrl: './user-orders.html',
 })
 export class UserOrders implements OnInit {

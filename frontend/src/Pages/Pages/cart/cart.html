@@ -34,7 +34,7 @@
       <tbody>
         <tr *ngFor="let item of cart.items()" class="border-b border-border-subtle">
           <td class="py-2">{{ item.productName }}</td>
-          <td class="py-2 text-right whitespace-nowrap">{{ item.price | currency }}</td>
+          <td class="py-2 text-right whitespace-nowrap">{{ item.price | egp }}</td>
           <td class="py-2 text-right">
             <div class="inline-flex items-center gap-1">
               <button
@@ -52,7 +52,7 @@
               </button>
             </div>
           </td>
-          <td class="py-2 text-right whitespace-nowrap">{{ item.price * item.quantity | currency }}</td>
+          <td class="py-2 text-right whitespace-nowrap">{{ item.price * item.quantity | egp }}</td>
           <td class="py-2 text-right">
             <button class="text-sm font-medium text-red-600 hover:underline dark:text-red-400" (click)="remove(item.productId)">Remove</button>
           </td>
@@ -61,7 +61,7 @@
       <tfoot>
         <tr>
           <td class="py-2 text-right font-semibold" colspan="3">Total</td>
-          <td class="py-2 text-right text-base font-bold whitespace-nowrap">{{ cart.totalPrice() | currency }}</td>
+          <td class="py-2 text-right text-base font-bold whitespace-nowrap">{{ cart.totalPrice() | egp }}</td>
           <td></td>
         </tr>
       </tfoot>

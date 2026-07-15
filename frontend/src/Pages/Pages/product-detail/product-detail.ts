@@ -6,6 +6,7 @@ import { StatusBadge, StatusBadgeVariant } from '../../../app/shared/status-badg
 import { ProductService, Product, LOW_STOCK_THRESHOLD } from '../../../app/services/product';
 import { OrderService } from '../../../app/services/orders';
 import { AuthService } from '../../../app/services/login';
+import { EgpCurrencyPipe } from '../../../app/pipes/egp-currency.pipe';
 
 // One row per (order, this product) pair — a product can only appear once
 // per order (see CreateOrderDto), so this is exactly this product's
@@ -22,7 +23,7 @@ interface StockMovement {
 
 @Component({
   selector: 'app-product-detail',
-  imports: [CommonModule, RouterLink, LoadingSpinner, StatusBadge],
+  imports: [CommonModule, RouterLink, LoadingSpinner, StatusBadge, EgpCurrencyPipe],
   templateUrl: './product-detail.html',
 })
 export class ProductDetail implements OnInit {

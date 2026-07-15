@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { CartService } from '../../../app/services/cart';
 import { AuthService } from '../../../app/services/login';
+import { EgpCurrencyPipe } from '../../../app/pipes/egp-currency.pipe';
 
 @Component({
   selector: 'app-cart',
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, EgpCurrencyPipe],
   templateUrl: './cart.html',
 })
 export class Cart {

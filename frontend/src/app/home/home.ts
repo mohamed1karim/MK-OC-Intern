@@ -6,10 +6,11 @@ import { StatusBadge, StatusBadgeVariant } from '../shared/status-badge/status-b
 import { AuthService } from '../services/login';
 import { ProductService, Product, LOW_STOCK_THRESHOLD } from '../services/product';
 import { OrderService, Order } from '../services/orders';
+import { EgpCurrencyPipe } from '../pipes/egp-currency.pipe';
 
 @Component({
   selector: 'app-home',
-  imports: [CommonModule, RouterLink, StatusBadge],
+  imports: [CommonModule, RouterLink, StatusBadge, EgpCurrencyPipe],
   templateUrl: './home.html',
 })
 export class Home implements OnInit {

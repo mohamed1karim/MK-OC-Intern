@@ -48,33 +48,8 @@ public class GroqProductDescriptionEnhancer : IProductDescriptionEnhancer
                 max_tokens = 200,
                 messages = new object[]
                 {
-                    new
-                    {
-                        role = "system",
-                        // Deliberately a cataloger/spec-sheet framing, not a "marketer" one —
-                        // an earlier version cast the LLM as a merchandiser writing "appealing"
-                        // copy, which reliably produced ad-copy ("perfect for...", "indulge in
-                        // the rich taste") instead of an actual description. This version asks
-                        // for facts, and explicitly bans the sales-language tells.
-                        content = "You expand short product notes into clear, factual catalog descriptions for " +
-                                  "a warehouse inventory system — not marketing copy. Write the way a product " +
-                                  "spec sheet or encyclopedia entry would: what the product is, its category, " +
-                                  "and well-known factual attributes (composition, materials, form, typical " +
-                                  "use). Do not use sales or promotional language: avoid words like 'perfect', " +
-                                  "'ideal', 'indulge', 'experience', 'versatile', 'essential', 'rejuvenating', " +
-                                  "exclamation points, or talking directly to the reader ('you'll love...'). " +
-                                  "Keep it factual and neutral: 2 to 4 sentences, never more."
-                    },
-                    new
-                    {
-                        role = "user",
-                        content = $"Product name: {productName}\n" +
-                                  $"Short note: \"{shortDescription}\"\n\n" +
-                                  "Expand this into a clear, factual, neutral product description. Only state " +
-                                  "facts implied by the note or well-known and uncontroversial about this exact " +
-                                  "product — do not invent specific claims. Return ONLY the description text — " +
-                                  "no preamble, no quotation marks, no labels."
-                    }
+                    new { role = "system", content = AiPrompts.ProductDescriptionSystem },
+                    new { role = "user", content = AiPrompts.ProductDescriptionUser(productName, shortDescription) }
                 }
             });
 

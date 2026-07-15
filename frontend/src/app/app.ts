@@ -1,14 +1,15 @@
 import { Component, signal, Inject, PLATFORM_ID } from '@angular/core';
-import { CommonModule, isPlatformBrowser, CurrencyPipe } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs';
 import { AuthService } from './services/login';
 import { CartService } from './services/cart';
 import { NotificationService } from './services/notification';
+import { EgpCurrencyPipe } from './pipes/egp-currency.pipe';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, CurrencyPipe],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, EgpCurrencyPipe],
   templateUrl: './app.html',
 })
 export class App {

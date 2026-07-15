@@ -12,10 +12,10 @@
       <button
         class="inline-flex items-center gap-1 rounded-lg border border-border-subtle px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
         *ngIf="!loading() && filteredOrders().length > 0"
-        (click)="exportCsv()"
+        (click)="exportExcel()"
       >
         <span class="material-icons text-base">download</span>
-        Export CSV
+        Export Excel
       </button>
     </div>
   </header>
@@ -112,7 +112,7 @@
       <div class="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
         <span>{{ o.orderDate | date: 'medium' }}</span>
         <span *ngIf="isAdmin">by {{ o.createdByUsername }}</span>
-        <span class="ml-auto font-semibold text-gray-900 dark:text-gray-100">{{ o.totalPrice | currency }}</span>
+        <span class="ml-auto font-semibold text-gray-900 dark:text-gray-100">{{ o.totalPrice | egp }}</span>
       </div>
     </a>
   </div>

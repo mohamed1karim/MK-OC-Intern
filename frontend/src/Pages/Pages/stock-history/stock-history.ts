@@ -6,7 +6,7 @@ import { LoadingSpinner } from '../../../app/shared/loading-spinner/loading-spin
 import { StatusBadge, StatusBadgeVariant } from '../../../app/shared/status-badge/status-badge';
 import { OrderService } from '../../../app/services/orders';
 import { AuthService } from '../../../app/services/login';
-import { downloadCsv } from '../../../app/utils/csv';
+import { downloadExcel } from '../../../app/utils/excel';
 
 type TypeFilter = 'All' | 'In' | 'Out';
 type StatusFilter = 'All' | 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
@@ -137,7 +137,7 @@ export class StockHistory implements OnInit {
     }
   }
 
-  exportCsv(): void {
+  exportExcel(): void {
     const headers = ['Date', 'Order ID', 'Product', 'Type', 'Quantity', 'Status', 'Requested By', 'Processed By'];
     const rows = this.filteredMovements().map((m) => [
       m.orderDate,
@@ -149,6 +149,6 @@ export class StockHistory implements OnInit {
       m.createdByUsername,
       m.processedByUsername ?? '',
     ]);
-    downloadCsv('stock-movement-history.csv', headers, rows);
+    downloadExcel('stock-movement-history.xlsx', headers, rows);
   }
 }

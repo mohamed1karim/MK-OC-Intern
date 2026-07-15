@@ -40,27 +40,8 @@ public class GroqReportGenerator : IReportGenerator
                 max_tokens = 700,
                 messages = new object[]
                 {
-                    new
-                    {
-                        role = "system",
-                        content = "You are an inventory and sales analyst for a small warehouse management " +
-                                  "system, writing this week's report. You're given real order statistics " +
-                                  "covering the last 7 days — order counts by status, the mean and standard " +
-                                  "deviation of sales and restock order values, and per-product demand (units " +
-                                  "sold, mean/std dev units per order, current stock, revenue). Write a clear, " +
-                                  "plain-language weekly report a store manager " +
-                                  "could act on, with exactly three sections: '## Overview' (a short summary " +
-                                  "of how the business performed), '## Keep Buying' (products with strong or " +
-                                  "steady demand worth reordering, one line each with a reason), and " +
-                                  "'## Reconsider' (products with weak, erratic, or overstocked demand that " +
-                                  "may not be worth reordering, one line each with a reason). Only use the " +
-                                  "numbers you're given — never invent figures."
-                    },
-                    new
-                    {
-                        role = "user",
-                        content = statsSummary
-                    }
+                    new { role = "system", content = AiPrompts.WeeklyReportSystem },
+                    new { role = "user", content = statsSummary }
                 }
             });
 

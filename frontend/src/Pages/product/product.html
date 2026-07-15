@@ -22,10 +22,10 @@
       <button
         class="inline-flex items-center gap-1 rounded-lg border border-border-subtle px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
         *ngIf="!loading() && filteredProducts().length > 0"
-        (click)="exportCsv()"
+        (click)="exportExcel()"
       >
         <span class="material-icons text-base">download</span>
-        Export CSV
+        Export Excel
       </button>
       <a
         class="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
@@ -159,7 +159,7 @@
             <app-status-badge *ngIf="p.isDeleted" label="Deleted" variant="gray" class="ml-2" />
           </td>
           <td class="py-2 max-w-xs">{{ p.description }}</td>
-          <td class="py-2 text-right">{{ p.price | currency }}</td>
+          <td class="py-2 text-right">{{ p.price | egp }}</td>
           <td class="py-2 text-right">
             <app-status-badge [label]="p.quantity" [variant]="isLowStock(p) ? 'red' : 'indigo'" />
           </td>

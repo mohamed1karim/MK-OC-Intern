@@ -5,10 +5,11 @@ import { LoadingSpinner } from '../../../app/shared/loading-spinner/loading-spin
 import { StatusBadge } from '../../../app/shared/status-badge/status-badge';
 import { OrderService, Order } from '../../../app/services/orders';
 import { AuthService } from '../../../app/services/login';
+import { EgpCurrencyPipe } from '../../../app/pipes/egp-currency.pipe';
 
 @Component({
   selector: 'app-order-detail',
-  imports: [CommonModule, RouterLink, LoadingSpinner, StatusBadge],
+  imports: [CommonModule, RouterLink, LoadingSpinner, StatusBadge, EgpCurrencyPipe],
   templateUrl: './order-detail.html',
 })
 export class OrderDetail implements OnInit {

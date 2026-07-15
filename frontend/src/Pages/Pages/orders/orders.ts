@@ -6,7 +6,8 @@ import { LoadingSpinner } from '../../../app/shared/loading-spinner/loading-spin
 import { StatusBadge, StatusBadgeVariant } from '../../../app/shared/status-badge/status-badge';
 import { OrderService, Order } from '../../../app/services/orders';
 import { AuthService } from '../../../app/services/login';
-import { downloadCsv } from '../../../app/utils/csv';
+import { downloadExcel } from '../../../app/utils/excel';
+import { EgpCurrencyPipe } from '../../../app/pipes/egp-currency.pipe';
 
 type TypeFilter = 'All' | 'In' | 'Out';
 type StatusFilter = 'All' | 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
@@ -16,7 +17,7 @@ type StatusFilter = 'All' | 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
 // Detail page, which is also where the Confirm/Complete/Cancel actions live.
 @Component({
   selector: 'app-orders',
-  imports: [CommonModule, FormsModule, RouterLink, LoadingSpinner, StatusBadge],
+  imports: [CommonModule, FormsModule, RouterLink, LoadingSpinner, StatusBadge, EgpCurrencyPipe],
   templateUrl: './orders.html',
 })
 export class Orders implements OnInit {
@@ -95,7 +96,7 @@ export class Orders implements OnInit {
     }
   }
 
-  exportCsv(): void {
+  exportExcel(): void {
     const headers = ['Order ID', 'Type', 'Status', 'Order Date', 'Total', 'Requested By', 'Processed By'];
     const rows = this.filteredOrders().map((o) => [
       o.id,
@@ -106,6 +107,6 @@ export class Orders implements OnInit {
       o.createdByUsername,
       o.processedByUsername ?? '',
     ]);
-    downloadCsv('orders.csv', headers, rows);
+    downloadExcel('orders.xlsx', headers, rows);
   }
 }
