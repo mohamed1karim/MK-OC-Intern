@@ -3,9 +3,10 @@
 // added — after this, the spec requires all stock changes to happen through
 // Orders, not by editing a Product directly (see UpdateProductDto).
 //
-// ActingUserId/Role are the same placeholder pattern as AdminActionDto
-// (Users' Promote/Demote) — introducing new products is Admin/SuperAdmin
-// only, checked in ProductService.CreateAsync.
+// No ActingUserId/Role here — introducing new products is Admin/SuperAdmin
+// only, enforced via [Authorize(Roles = ...)] on the controller, with the
+// acting user's id/role read from their validated JWT rather than trusted
+// from the request body.
 using System.ComponentModel.DataAnnotations;
 
 namespace db.Service.DTOs.Products;
@@ -24,10 +25,4 @@ public class CreateProductDto
 
     [Range(0, int.MaxValue, ErrorMessage = "Quantity cannot be negative.")]
     public int Quantity { get; set; }
-
-    [Required]
-    public int ActingUserId { get; set; }
-
-    [Required]
-    public string Role { get; set; } = string.Empty;
 }

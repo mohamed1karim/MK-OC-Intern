@@ -1,0 +1,179 @@
+<div class="analytics-page">
+  <header class="analytics-header">
+    <h1>Analytics</h1>
+  </header>
+
+  <div class="state-message" *ngIf="!isAdmin">
+    Only Admins can view analytics.
+  </div>
+
+  <div class="state-message" *ngIf="isAdmin && loading()">
+    <app-loading-spinner [size]="28" />
+    <span>Loading analytics…</span>
+  </div>
+
+  <div class="state-message state-error" *ngIf="error()">{{ error() }}</div>
+
+  <ng-container *ngIf="isAdmin && !loading() && !error()">
+    <div class="card-surface chart-card">
+      <h2 class="chart-title">Stock Levels</h2>
+
+      <div class="legend">
+        <span class="legend-item"><span class="legend-swatch swatch-good"></span>Sufficient stock</span>
+        <span class="legend-item"><span class="legend-swatch swatch-warning"></span>Low stock</span>
+      </div>
+
+      <div class="state-message" *ngIf="stockBars().length === 0">No products yet.</div>
+
+      <div class="hbar-chart" *ngIf="stockBars().length > 0">
+        <div
+          class="hbar-row"
+          *ngFor="let bar of stockBars()"
+          tabindex="0"
+          (mouseenter)="hoveredStock.set(bar)"
+          (mouseleave)="hoveredStock.set(null)"
+          (focus)="hoveredStock.set(bar)"
+          (blur)="hoveredStock.set(null)"
+        >
+          <span class="hbar-label">{{ bar.name }}</span>
+          <div class="hbar-track">
+            <div
+              class="hbar-fill"
+              [class.fill-warning]="bar.isLow"
+              [class.fill-good]="!bar.isLow"
+              [class.hovered]="hoveredStock() === bar"
+              [style.width.%]="bar.widthPercent"
+            ></div>
+          </div>
+          <span class="hbar-value">{{ bar.quantity }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-surface chart-card">
+      <h2 class="chart-title">Orders by Status</h2>
+
+      <div class="legend">
+        <span class="legend-item" *ngFor="let bar of statusBars()">
+          <span class="legend-swatch" [ngClass]="bar.colorClass"></span>{{ bar.status }}
+        </span>
+      </div>
+
+      <div class="state-message" *ngIf="totalOrders() === 0">No orders yet.</div>
+
+      <div class="vbar-chart" *ngIf="totalOrders() > 0">
+        <div
+          class="vbar-col"
+          *ngFor="let bar of statusBars()"
+          tabindex="0"
+          (mouseenter)="hoveredStatus.set(bar)"
+          (mouseleave)="hoveredStatus.set(null)"
+          (focus)="hoveredStatus.set(bar)"
+          (blur)="hoveredStatus.set(null)"
+        >
+          <span class="vbar-value">{{ bar.count }}</span>
+          <div class="vbar-track">
+            <div
+              class="vbar-fill"
+              [ngClass]="bar.colorClass"
+              [class.hovered]="hoveredStatus() === bar"
+              [style.height.%]="bar.heightPercent"
+            ></div>
+          </div>
+          <span class="vbar-label">{{ bar.status }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-surface chart-card">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <h2 class="chart-title mb-0">Weekly AI Report</h2>
+          <p class="text-xs text-gray-500 dark:text-gray-400" *ngIf="!reportLoading()">
+            Auto-regenerates weekly · covers the last 7 days
+          </p>
+        </div>
+        <button
+          type="button"
+          class="h-9 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="reportLoading() || regenerating()"
+          (click)="regenerateReport()"
+        >
+          {{ regenerating() ? 'Regenerating…' : 'Regenerate now' }}
+        </button>
+      </div>
+
+      <div class="state-message" *ngIf="reportLoading()">
+        <app-loading-spinner [size]="28" />
+        <span>Loading this week's report…</span>
+      </div>
+
+      <div class="state-message" *ngIf="regenerating()">
+        <app-loading-spinner [size]="28" />
+        <span>Crunching the numbers and asking the AI…</span>
+      </div>
+
+      <div class="state-message state-error" *ngIf="reportError()">{{ reportError() }}</div>
+
+      <ng-container *ngIf="report() as r">
+        <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
+            <p class="text-xs text-gray-500 dark:text-gray-400">Sales orders (completed)</p>
+            <p class="mt-1 text-lg font-semibold">{{ r.salesOrderCount }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">mean ${{ r.meanSaleValue }} · σ ${{ r.stdDevSaleValue }}</p>
+          </div>
+          <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
+            <p class="text-xs text-gray-500 dark:text-gray-400">Restock orders (completed)</p>
+            <p class="mt-1 text-lg font-semibold">{{ r.restockOrderCount }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">mean ${{ r.meanRestockValue }} · σ ${{ r.stdDevRestockValue }}</p>
+          </div>
+          <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
+            <p class="text-xs text-gray-500 dark:text-gray-400">Pending</p>
+            <p class="mt-1 text-lg font-semibold">{{ r.pendingCount }}</p>
+          </div>
+          <div class="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
+            <p class="text-xs text-gray-500 dark:text-gray-400">Cancelled</p>
+            <p class="mt-1 text-lg font-semibold">{{ r.cancelledCount }}</p>
+          </div>
+        </div>
+
+        <div class="mt-5 overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead>
+              <tr class="text-xs text-gray-500 dark:text-gray-400">
+                <th class="pb-2 pr-4">Product</th>
+                <th class="pb-2 pr-4">Stock</th>
+                <th class="pb-2 pr-4">Units sold</th>
+                <th class="pb-2 pr-4">Mean/order</th>
+                <th class="pb-2 pr-4">Std dev</th>
+                <th class="pb-2">Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of r.productStats" class="border-t border-gray-100 dark:border-gray-800">
+                <td class="py-2 pr-4 font-medium">{{ p.productName }}</td>
+                <td class="py-2 pr-4">{{ p.currentStock }}</td>
+                <td class="py-2 pr-4">{{ p.totalQuantityOrdered }}</td>
+                <td class="py-2 pr-4">{{ p.meanQuantityPerOrder }}</td>
+                <td class="py-2 pr-4">{{ p.stdDevQuantityPerOrder }}</td>
+                <td class="py-2">${{ p.revenue }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mt-5 flex flex-col gap-4">
+          <div *ngFor="let section of reportSections()">
+            <h3 class="text-sm font-semibold">{{ section.heading }}</h3>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-300" *ngFor="let para of section.paragraphs">{{ para }}</p>
+            <ul class="mt-1 list-disc pl-5 text-sm text-gray-600 dark:text-gray-300" *ngIf="section.bullets.length">
+              <li *ngFor="let bullet of section.bullets">{{ bullet }}</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="mt-4 text-xs text-gray-400 dark:text-gray-500">Generated {{ r.generatedAt | date: 'medium' }}</p>
+      </ng-container>
+    </div>
+  </ng-container>
+</div>

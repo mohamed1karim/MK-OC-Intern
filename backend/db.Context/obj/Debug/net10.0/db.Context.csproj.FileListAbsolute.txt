@@ -12,3 +12,4 @@ C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\obj\Debug\net10.0\refint\d
 C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\obj\Debug\net10.0\db.Context.pdb
 C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\obj\Debug\net10.0\db.Context.genruntimeconfig.cache
 C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\obj\Debug\net10.0\ref\db.Context.dll
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Context\obj\Debug\net10.0\db.Context.sourcelink.json

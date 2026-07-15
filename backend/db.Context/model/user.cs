@@ -36,6 +36,14 @@ public class User
     // Defaults to "now" the instant a new User object is constructed in code,
     // so callers never have to remember to set this themselves.
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Soft delete: "deleting" a user just flips this instead of removing the
+    // row. A hard delete would violate the Restrict FK on Order.CreatedByUser/
+    // ProcessedByUser for anyone with order history — soft delete sidesteps
+    // that entirely (the row never disappears, so every historical
+    // "requested by"/"accepted by" reference keeps resolving), while still
+    // hiding the user from normal Users-list queries.
+    public bool IsDeleted { get; set; } = false;
 }
 
 /// <summary>

@@ -1,0 +1,104 @@
+<div class="mx-auto max-w-3xl p-6">
+  <h1 class="rise-in mb-6 text-3xl">
+    {{ greeting }}{{ auth.currentUser() ? ', ' + auth.currentUser()!.username : '' }}
+  </h1>
+
+  <div
+    class="stagger-list mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3"
+    *ngIf="auth.currentUser() && !loadingStats()"
+  >
+    <a routerLink="/products" class="card-surface tile-depth tile-shadow-products cursor-pointer p-5">
+      <span class="icon-badge icon-badge-products mb-2">
+        <span class="material-icons">inventory_2</span>
+      </span>
+      <div class="text-2xl font-bold">{{ totalProducts() }}</div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">Products</div>
+    </a>
+
+    <a
+      routerLink="/products"
+      class="card-surface tile-depth cursor-pointer p-5"
+      [class.tile-shadow-good]="lowStockCount() === 0"
+      [class.tile-shadow-warning]="lowStockCount() > 0"
+    >
+      <span
+        class="icon-badge mb-2"
+        [class.icon-badge-good]="lowStockCount() === 0"
+        [class.icon-badge-warning]="lowStockCount() > 0"
+      >
+        <span class="material-icons">trending_down</span>
+      </span>
+      <div class="text-2xl font-bold" [class.text-stat-warning]="lowStockCount() > 0">{{ lowStockCount() }}</div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">Low stock</div>
+    </a>
+
+    <a
+      routerLink="/orders"
+      class="card-surface tile-depth cursor-pointer p-5"
+      [class.tile-shadow-violet]="pendingOrdersCount() === 0"
+      [class.tile-shadow-warning]="pendingOrdersCount() > 0"
+    >
+      <span
+        class="icon-badge mb-2"
+        [class.icon-badge-violet]="pendingOrdersCount() === 0"
+        [class.icon-badge-warning]="pendingOrdersCount() > 0"
+      >
+        <span class="material-icons">schedule</span>
+      </span>
+      <div class="text-2xl font-bold" [class.text-stat-warning]="pendingOrdersCount() > 0">{{ pendingOrdersCount() }}</div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">
+        {{ isAdmin ? 'Pending orders' : 'Your pending orders' }}
+      </div>
+    </a>
+  </div>
+
+  <section class="mb-8" *ngIf="auth.currentUser() && !loadingStats() && lowStockProducts().length > 0">
+    <div class="mb-3 flex items-baseline justify-between">
+      <h2 class="text-base font-semibold">Running Low</h2>
+      <a routerLink="/products" class="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400">See all</a>
+    </div>
+    <div class="card-surface stagger-list divide-y divide-border-subtle overflow-hidden">
+      <a
+        *ngFor="let p of lowStockProducts()"
+        [routerLink]="['/products', p.id]"
+        class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/60"
+      >
+        <span class="font-medium">{{ p.name }}</span>
+        <span class="font-semibold text-stat-warning">{{ p.quantity }} left</span>
+      </a>
+    </div>
+    <div class="px-1 pt-2 text-xs text-gray-500 dark:text-gray-400" *ngIf="lowStockCount() > lowStockProducts().length">
+      +{{ lowStockCount() - lowStockProducts().length }} more running low
+    </div>
+  </section>
+
+  <section *ngIf="auth.currentUser() && !loadingStats()">
+    <div class="mb-3 flex items-baseline justify-between">
+      <h2 class="text-base font-semibold">Recent Orders</h2>
+      <a routerLink="/orders" class="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400">See all</a>
+    </div>
+
+    <p class="text-gray-500 dark:text-gray-400" *ngIf="recentOrders().length === 0">
+      {{ isAdmin ? 'No orders yet.' : "You haven't placed any orders yet." }}
+    </p>
+
+    <div class="stagger-list flex flex-col gap-2" *ngIf="recentOrders().length > 0">
+      <a
+        *ngFor="let o of recentOrders()"
+        [routerLink]="['/orders', o.id]"
+        class="card-surface card-surface-hover flex cursor-pointer flex-col gap-2 p-3"
+      >
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-semibold">Order #{{ o.id }}</span>
+          <app-status-badge [label]="o.type" [variant]="o.type === 'Out' ? 'red' : 'green'" />
+          <app-status-badge [label]="o.status" [variant]="statusVariant(o.status)" />
+        </div>
+        <div class="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
+          <span>{{ o.orderDate | date: 'medium' }}</span>
+          <span *ngIf="isAdmin">by {{ o.createdByUsername }}</span>
+          <span class="ml-auto font-semibold text-gray-900 dark:text-gray-100">{{ o.totalPrice | currency }}</span>
+        </div>
+      </a>
+    </div>
+  </section>
+</div>

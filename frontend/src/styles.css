@@ -1,0 +1,500 @@
+/* No Preflight — Preflight is a global element reset (removes default
+   button/heading/table styling everywhere). This app used to keep it off
+   to protect Angular Material's own component styles; Material is gone
+   now, but Preflight's full reset is still more than needed, so instead
+   the one piece that turned out to matter (native <button> chrome) is
+   reset explicitly below in its own @layer base block.
+   Declaring the layer order up front (theme, then base, then utilities)
+   is what makes utility classes like bg-blue-600/px-4 correctly win over
+   that base-layer button reset wherever a template adds them — cascade
+   layers are prioritized by declaration order, not by which layer's rules
+   appear later in the file. */
+@layer theme, base, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@plugin "@tailwindcss/forms";
+
+/* Every plain <button> that doesn't set its own background/border via a
+   utility class (Clear, the login/signup toggle, Restore/Demote/Delete
+   text-links, Remove in cart, the circular account-menu trigger, etc.) was
+   silently falling back to the browser's native bordered/backgrounded
+   button chrome — that's the "ugly little box" around text-only buttons,
+   and the native focus outline on the circular account button doesn't
+   follow its rounded shape, which is the "circular box extending beyond
+   the space" artifact. Buttons that DO want a background/border (Log in,
+   Confirm, Add Product, ...) are unaffected: their background-color and
+   border utility classes live in the utilities layer, declared above to
+   win over this. */
+/* Without Preflight, box-sizing defaults to the browser's content-box —
+   so an element sized with a utility class like w-full still grows past
+   its container by however much padding/border it also carries (this is
+   what pushed the pill-shaped inputs past the edge of the login card).
+   border-box is what every Tailwind app assumes utilities behave like. */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+@layer base {
+  button {
+    appearance: none;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    /* Matches the browser default this app already relies on everywhere
+       (no template sets text-center explicitly) — kept as an explicit
+       value here rather than "inherit" so behavior doesn't silently
+       change based on whatever a button's parent happens to set. */
+    text-align: center;
+    cursor: pointer;
+  }
+
+  button:focus-visible {
+    outline: 2px solid #22d3ee;
+    outline-offset: 2px;
+  }
+}
+
+/* Base page setup. "Vibrant Pulse" is a deliberate single committed look
+   (chosen from a 3-direction comparison) rather than a light/dark-adaptive
+   theme — the rich violet mesh backdrop IS the identity, so this no longer
+   branches on prefers-color-scheme the way the old plain white/near-black
+   version did. color-scheme stays "dark" so native form-control chrome
+   (scrollbars, etc.) matches instead of rendering light-on-violet. */
+html {
+  height: 100%;
+}
+
+/* Two-face type system: Unbounded (bold/geometric, a little unusual) carries
+   every heading, hero number, and the wordmark; Plus Jakarta Sans is the
+   quiet workhorse for body copy, table data, and form fields. Registered
+   as custom properties (not just slapped on body) so any element can opt
+   into the display face explicitly via font-family: var(--font-display). */
+:root {
+  --font-display: "Unbounded", -apple-system, "Segoe UI", sans-serif;
+  --font-body: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  color-scheme: dark;
+  margin: 0;
+  min-height: 100%;
+  font-family: var(--font-body);
+  color: #f1edff;
+  background-color: #1b1147;
+  background-image:
+    radial-gradient(1100px 750px at 8% -8%, rgba(34, 211, 238, 0.28), transparent 60%),
+    radial-gradient(950px 700px at 108% 8%, rgba(167, 139, 250, 0.32), transparent 60%),
+    radial-gradient(900px 900px at 50% 115%, rgba(109, 40, 217, 0.4), transparent 60%),
+    linear-gradient(160deg, #1e1250 0%, #2a1a6e 45%, #4c1d95 100%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+/* Every page heading uses the display face, tightened up and a touch
+   heavier — this is the single biggest lever on "does this look designed"
+   and it's free: every page already wraps its title in <h1>/<h2>, so this
+   one rule reaches all of them with zero template changes. */
+h1, h2 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+h1 { font-weight: 700; }
+h2 { font-weight: 600; }
+
+/* A very slow, subtle drift on the mesh so the backdrop reads as alive
+   rather than a static wallpaper — kept small/slow enough to never
+   distract from foreground content, and skipped entirely for anyone who's
+   asked the OS to reduce motion. */
+@media (prefers-reduced-motion: no-preference) {
+  body {
+    background-size: 130% 130%, 130% 130%, 130% 130%, 100% 100%;
+    animation: mesh-drift 30s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes mesh-drift {
+  0% { background-position: 0% 0%, 100% 0%, 50% 100%, 0 0; }
+  100% { background-position: 6% 4%, 92% 10%, 46% 92%, 0 0; }
+}
+
+/* Without Preflight, plain <a> tags keep the browser's default underline —
+   visible on every routerLink in the Tailwind-rebuilt pages (nav links,
+   "See all", table row links, etc.). This is the one Preflight reset worth
+   taking globally on its own: it's narrow (just anchors), and every
+   Material anchor-based component already sets its own text-decoration
+   with higher specificity, so this can't affect anything still on Material. */
+a {
+  text-decoration: none;
+}
+
+/* "Filled" input style — replaces the flat white-box-with-a-gray-border
+   look (read as bland/generic) with a softly tinted, borderless, fully
+   pill-shaped field (a deliberately different silhouette from the
+   rectangular cards/buttons everywhere else, so fields read as distinctly
+   "a place to type" rather than just another box) that lifts to a
+   brighter surface plus a colored focus ring on interaction. Since
+   Tailwind's utility classes are emitted inside `@layer utilities` and
+   this block isn't in any @layer, it wins over the inline rounding, border
+   color, and focus-ring utility classes already on these inputs
+   regardless of specificity — same mechanism the checkbox-visibility fix
+   below relies on. Material's own inputs are untouched: they're styled via
+   their own higher-specificity classes (.mat-mdc-input-element etc.), not
+   plain type/attribute selectors. */
+/* Forms now always sit inside a solid-white .card-surface (the violet mesh
+   is strictly a page-background/glass-tile thing), so inputs get one fixed
+   light treatment instead of the old light-dark() branch that used to
+   track the whole page's light/dark mode. */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  background-color: #f1f2f6;
+  border-color: transparent;
+  border-radius: 9999px;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  color: #16132b;
+  box-shadow: none;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Selects keep their native dropdown arrow, which the forms plugin insets
+   from the right edge with fixed padding — a fully round pill pushes the
+   arrow uncomfortably close to the curve, so give it a little more room. */
+select {
+  padding-right: 2.25rem;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus {
+  background-color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.22);
+}
+
+/* Checkboxes ("Show deleted", "Low stock only") were nearly invisible — a
+   thin 1px border at low contrast, since the forms plugin's own base reset
+   competes with (and can win over) a plain border-* utility class at equal
+   specificity. Setting it directly here, not as a utility class,
+   guarantees it always wins regardless of that cascade fight. */
+input[type="checkbox"] {
+  border-style: solid;
+  border-width: 2px;
+  border-color: #9691a8;
+}
+
+input[type="checkbox"]:checked {
+  accent-color: #7c3aed;
+}
+
+/* You can add global styles to this file, and also import other style files */
+
+/* Design tokens for the Tailwind UI rebuild (shell/Home/Products pilot).
+   Every color here is already validated and reused across this app (sidebar
+   nav icons, Home stat tiles, role/status/type chips) — registering them as
+   named Tailwind colors keeps that consistency as more pages migrate off
+   Material, instead of re-typing the same hex values inline everywhere. */
+@theme {
+  --color-nav-home: light-dark(#2563eb, #60a5fa);
+  --color-nav-products: light-dark(#4f46e5, #818cf8);
+  --color-nav-orders: light-dark(#b54708, #fbbf24);
+  --color-nav-users: light-dark(#6941c6, #a78bfa);
+  --color-nav-analytics: light-dark(#0d9488, #2dd4bf);
+
+  --color-stat-products: #0891b2;
+  --color-stat-lowstock-ok: #059669;
+  --color-stat-pending-ok: #7c3aed;
+  --color-stat-warning: #c2410c;
+
+  /* Always used inside a solid-white .card-surface now, so this is a fixed
+     light hairline rather than a light-dark() pair. */
+  --color-border-subtle: #e9e7f0;
+
+  --color-badge-indigo-bg: #eef2ff;
+  --color-badge-indigo-text: #3730a3;
+  --color-badge-amber-bg: #fffaeb;
+  --color-badge-amber-text: #b54708;
+  --color-badge-violet-bg: #f4ebff;
+  --color-badge-violet-text: #6941c6;
+  --color-badge-green-bg: #ecfdf3;
+  --color-badge-green-text: #067647;
+  --color-badge-red-bg: #fef3f2;
+  --color-badge-red-text: #b42318;
+  --color-badge-gray-bg: #f3f4f6;
+  --color-badge-gray-text: #6b7280;
+}
+
+/* "Vibrant Pulse" — every ordinary content surface (tables, forms, lists)
+   is a solid white card floating on the violet mesh backdrop, so dense
+   data stays fully legible; only the 3 Home stat tiles (.tile-depth,
+   below) get the translucent glass treatment, since they sit directly on
+   the backdrop and are meant to feel like part of the chrome. .tile-depth
+   is applied alongside .card-surface on the same element and, being the
+   later rule at equal specificity, wins on every property it sets. */
+.card-surface {
+  /* The gradient hairline along the top edge is the recurring shape
+     signature tying every card on every page back to the same identity —
+     a second background layer (not a border/pseudo-element), so it's
+     naturally clipped to the card's own border-radius with no extra
+     markup and no risk of clipping real content the way overflow:hidden
+     would on a card that happens to hold a dropdown or a scrolling table. */
+  background:
+    linear-gradient(90deg, #22d3ee, #a78bfa, #22d3ee) top / 100% 3px no-repeat,
+    #ffffff;
+  border-radius: 20px;
+  color: #16132b;
+  box-shadow:
+    0 1px 1px rgba(20, 10, 60, 0.05),
+    0 20px 45px -14px rgba(15, 6, 50, 0.5);
+}
+
+.card-surface-hover {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.card-surface-hover:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 1px 1px rgba(20, 10, 60, 0.05),
+    0 26px 50px -14px rgba(15, 6, 50, 0.6);
+}
+
+/* Frosted glass, tinted per-stat via --shadow-tint (set by the
+   .tile-shadow-* modifiers below) so each of the 3 Home tiles reads as its
+   own color family instead of one flat glass block. */
+.tile-depth {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06));
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 10px 30px -10px var(--shadow-tint, rgba(34, 211, 238, 0.5));
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.tile-depth:hover {
+  transform: translateY(-4px);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 16px 40px -10px var(--shadow-tint, rgba(34, 211, 238, 0.6));
+}
+
+.tile-shadow-products { --shadow-tint: rgba(34, 211, 238, 0.55); }
+.tile-shadow-good { --shadow-tint: rgba(52, 211, 153, 0.55); }
+.tile-shadow-violet { --shadow-tint: rgba(167, 139, 250, 0.55); }
+.tile-shadow-warning { --shadow-tint: rgba(251, 146, 60, 0.55); }
+
+/* --color-stat-warning (#c2410c, a dark burnt orange) was picked for
+   contrast on a white card — e.g. the "4 left" text in Home's Running Low
+   list. Reused as-is on a Home stat tile's big number, it sits on dark
+   translucent glass instead and nearly disappears (a much lower-contrast
+   pairing than the white numbers on the other tiles right next to it).
+   Scoping a brighter override to .tile-depth's specific descendants fixes
+   that one context without touching the white-card usage. */
+.tile-depth .text-stat-warning {
+  color: #fdba74;
+}
+
+.icon-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.35);
+}
+
+/* Modifier for the rare larger badge (e.g. the login page's mark above the
+   form) — a plain Tailwind size utility can't win here since .icon-badge's
+   width/height/border-radius are unlayered and always beat the utilities
+   layer regardless of source order, so this needs to be its own unlayered
+   override instead. */
+.icon-badge-lg {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+}
+
+.icon-badge-lg .material-icons {
+  font-size: 26px;
+}
+
+.icon-badge .material-icons {
+  font-size: 19px;
+  color: white;
+}
+
+.icon-badge-products {
+  background: linear-gradient(135deg, #22d3ee, #6366f1);
+}
+.icon-badge-good {
+  background: linear-gradient(135deg, #34d399, #059669);
+}
+.icon-badge-violet {
+  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+}
+.icon-badge-warning {
+  background: linear-gradient(135deg, #fb923c, #ea580c);
+}
+
+/* Every primary action button in the app (Log in, Add Product, Save
+   Changes, Buy, Confirm, the cart FAB, the product In/Out toggle, ...)
+   uses Tailwind's bg-blue-600/hover:bg-blue-700 utilities directly.
+   Redefining those two exact utility classes here — unlayered, so this
+   wins over the utilities layer regardless of specificity — turns every
+   one of them into the app's signature gradient action button in one
+   place instead of editing a dozen templates. */
+.bg-blue-600 {
+  position: relative;
+  overflow: hidden;
+  background-color: transparent;
+  background-image: linear-gradient(135deg, #22d3ee, #7c3aed);
+  box-shadow: 0 6px 20px -6px rgba(124, 58, 237, 0.65);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+/* The cart FAB is both `fixed` (Tailwind utility, to float over the
+   viewport) and `bg-blue-600` (for the gradient above) — the plain
+   position:relative right above this would otherwise win (unlayered beats
+   the utilities layer at equal specificity) and silently turn `fixed` into
+   an in-flow element, which is exactly what pushed the cart button into
+   normal document flow (hence "on the left") and made the page taller
+   than the viewport (hence the stray scrollbar). Two classes beats one at
+   equal unlayered-ness, so this reasserts `fixed` regardless of rule order. */
+.fixed.bg-blue-600 {
+  position: fixed;
+}
+
+/* A light diagonal sweep that slides across on hover — parked just off
+   the left edge at rest, animated to just past the right edge on hover.
+   Both selectors below target the SAME pseudo-element (one per host
+   element, not per class), since a button always carries both classes
+   together. */
+.bg-blue-600::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.5s ease;
+}
+
+.hover\:bg-blue-700:hover {
+  background-color: transparent;
+  filter: brightness(1.1);
+  box-shadow: 0 8px 26px -6px rgba(34, 211, 238, 0.6);
+  transform: translateY(-1px);
+}
+
+.hover\:bg-blue-700:hover::after {
+  left: 130%;
+}
+
+.bg-blue-600:active {
+  transform: scale(0.97);
+}
+
+/* Entrance choreography: applied once per page-load to a tile grid or a
+   list container (class="stagger-list" on the parent) — every direct
+   child rises/fades in with a small staggered delay instead of the whole
+   page just appearing flat. nth-child-driven, so it works on *ngFor
+   output with zero per-item Angular bookkeeping. Skipped for anyone who's
+   asked for reduced motion. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .stagger-list > * {
+    animation: rise-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .stagger-list > *:nth-child(1) { animation-delay: 0.02s; }
+  .stagger-list > *:nth-child(2) { animation-delay: 0.06s; }
+  .stagger-list > *:nth-child(3) { animation-delay: 0.1s; }
+  .stagger-list > *:nth-child(4) { animation-delay: 0.14s; }
+  .stagger-list > *:nth-child(5) { animation-delay: 0.18s; }
+  .stagger-list > *:nth-child(6) { animation-delay: 0.22s; }
+  .stagger-list > *:nth-child(n + 7) { animation-delay: 0.24s; }
+}
+
+/* A larger one-shot rise for hero/greeting-scale elements — used once per
+   element, not per list item. */
+@media (prefers-reduced-motion: no-preference) {
+  .rise-in {
+    animation: rise-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+/* Login page's ambient background orbs — soft blurred blobs that drift
+   slowly behind the card, each on its own size/position/timing so they
+   don't read as a single obviously-looping shape. Pure decoration
+   (aria-hidden in the template), so a static version under reduced-motion
+   is enough — no need to hide them entirely. */
+.login-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(60px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.login-orb-a {
+  top: -10%;
+  left: 8%;
+  width: 340px;
+  height: 340px;
+  background: radial-gradient(circle, #22d3ee, transparent 70%);
+}
+
+.login-orb-b {
+  bottom: -15%;
+  right: 5%;
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, #a78bfa, transparent 70%);
+}
+
+.login-orb-c {
+  bottom: 10%;
+  left: -8%;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, #f472b6, transparent 70%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .login-orb-a { animation: orb-float-a 16s ease-in-out infinite alternate; }
+  .login-orb-b { animation: orb-float-b 20s ease-in-out infinite alternate; }
+  .login-orb-c { animation: orb-float-c 13s ease-in-out infinite alternate; }
+}
+
+@keyframes orb-float-a {
+  to { transform: translate(30px, 20px) scale(1.08); }
+}
+@keyframes orb-float-b {
+  to { transform: translate(-25px, -30px) scale(1.1); }
+}
+@keyframes orb-float-c {
+  to { transform: translate(20px, -15px) scale(0.95); }
+}
+
+

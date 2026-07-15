@@ -1,0 +1,224 @@
+/* All of --text-primary/secondary/muted below are consumed by chart
+   elements that always sit inside a solid-white .card-surface chart-card
+   (chart-title, legend, bar labels/values), so they stay fixed dark values
+   regardless of the page's own violet backdrop. The lone exception is the
+   "Analytics" <h1> itself, which sits directly on that backdrop — it gets
+   its own explicit light color just below instead of using --text-primary. */
+.analytics-page {
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --gridline: #e1e0d9;
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --slot-1: #2a78d6;
+  --slot-2: #1baf7a;
+  --slot-3: #eda100;
+  --slot-4: #008300;
+
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.analytics-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem;
+  color: #ffffff;
+}
+
+/* Also sits directly on the violet backdrop, not inside a card — a fixed
+   light color, same reasoning as .analytics-header h1 above. */
+.state-message {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.state-error {
+  color: #fca5a5;
+}
+
+.chart-card {
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.chart-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.9rem;
+  color: var(--text-primary);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.swatch-good {
+  background: var(--status-good);
+}
+
+.swatch-warning {
+  background: var(--status-warning);
+}
+
+.status-slot-1 {
+  background: var(--slot-1);
+}
+
+.status-slot-2 {
+  background: var(--slot-2);
+}
+
+.status-slot-3 {
+  background: var(--slot-3);
+}
+
+.status-slot-4 {
+  background: var(--slot-4);
+}
+
+/* Horizontal bar chart (stock levels) */
+.hbar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hbar-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 90px 1fr 2.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  border-radius: 4px;
+  outline: none;
+}
+
+.hbar-row:focus-visible {
+  outline: 2px solid var(--slot-1);
+  outline-offset: 2px;
+}
+
+.hbar-label {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hbar-track {
+  height: 20px;
+  background: var(--gridline);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.hbar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: filter 0.1s ease;
+}
+
+.hbar-fill.fill-good {
+  background: var(--status-good);
+}
+
+.hbar-fill.fill-warning {
+  background: var(--status-warning);
+}
+
+.hbar-fill.hovered {
+  filter: brightness(1.12);
+}
+
+.hbar-value {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+/* Vertical bar chart (orders by status) */
+.vbar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 180px;
+  padding-top: 1.5rem;
+}
+
+.vbar-col {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  border-radius: 4px;
+  outline: none;
+}
+
+.vbar-col:focus-visible {
+  outline: 2px solid var(--slot-1);
+  outline-offset: 2px;
+}
+
+.vbar-value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.3rem;
+}
+
+.vbar-track {
+  flex: 1;
+  width: 100%;
+  max-width: 24px;
+  display: flex;
+  align-items: flex-end;
+  background: var(--gridline);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.vbar-fill {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  transition: filter 0.1s ease;
+}
+
+.vbar-fill.hovered {
+  filter: brightness(1.12);
+}
+
+.vbar-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+  white-space: nowrap;
+}

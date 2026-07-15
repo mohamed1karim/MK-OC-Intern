@@ -1,0 +1,88 @@
+<div class="mx-auto max-w-4xl p-6">
+  <header class="mb-5 flex items-baseline justify-between">
+    <h1 class="text-2xl font-semibold">Users</h1>
+    <div class="flex items-center gap-4" *ngIf="!loading() && isAdmin">
+      <label class="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          [ngModel]="showDeleted()"
+          (ngModelChange)="toggleShowDeleted()"
+          name="showDeleted"
+        />
+        Show deleted
+      </label>
+      <span class="text-sm text-gray-500 dark:text-gray-400">{{ users().length }} total</span>
+    </div>
+  </header>
+
+  <div class="text-gray-500 dark:text-gray-400" *ngIf="!isAdmin">Only Admins can view this page.</div>
+
+  <div class="flex items-center gap-3 text-gray-500 dark:text-gray-400" *ngIf="isAdmin && loading()">
+    <app-loading-spinner [size]="28" />
+    <span>Loading users…</span>
+  </div>
+
+  <div class="text-red-600" *ngIf="error()">{{ error() }}</div>
+  <div class="text-red-600" *ngIf="actionError()">{{ actionError() }}</div>
+
+  <div class="card-surface overflow-x-auto p-4" *ngIf="isAdmin && !loading() && !error() && users().length > 0">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border-subtle text-left">
+          <th class="py-2 font-semibold">Username</th>
+          <th class="py-2 font-semibold">Email</th>
+          <th class="py-2 font-semibold">Role</th>
+          <th class="py-2 font-semibold">Created At</th>
+          <th class="py-2 font-semibold">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="stagger-list">
+        <tr *ngFor="let u of users()" class="border-b border-border-subtle last:border-0">
+          <td class="py-2 font-medium whitespace-nowrap" [class.opacity-50]="u.isDeleted">
+            {{ u.username }}
+            <app-status-badge *ngIf="u.isDeleted" label="Deleted" variant="gray" class="ml-2" />
+          </td>
+          <td class="py-2" [class.opacity-50]="u.isDeleted">{{ u.email }}</td>
+          <td class="py-2">
+            <app-status-badge [label]="u.role" [variant]="roleVariant(u.role)" />
+          </td>
+          <td class="py-2 whitespace-nowrap text-gray-500 dark:text-gray-400">{{ u.createdAt | date: 'medium' }}</td>
+          <td class="py-2 whitespace-nowrap">
+            <ng-container *ngIf="!u.isDeleted; else deletedActions">
+              <a
+                *ngIf="canViewOrders(u)"
+                [routerLink]="['/users', u.id, 'orders']"
+                class="mr-3 text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+              >
+                View Orders
+              </a>
+              <button
+                *ngIf="u.role === 'User'"
+                class="mr-3 text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+                (click)="makeAdmin(u)"
+              >
+                Make Admin
+              </button>
+              <button
+                *ngIf="u.role === 'Admin'"
+                class="mr-3 text-sm font-medium text-red-600 hover:underline dark:text-red-400"
+                (click)="demote(u)"
+              >
+                Demote
+              </button>
+              <button *ngIf="u.role === 'User'" class="text-sm font-medium text-red-600 hover:underline dark:text-red-400" (click)="deleteUser(u)">
+                Delete
+              </button>
+            </ng-container>
+            <ng-template #deletedActions>
+              <button class="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400" (click)="restoreUser(u)">
+                Restore
+              </button>
+            </ng-template>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

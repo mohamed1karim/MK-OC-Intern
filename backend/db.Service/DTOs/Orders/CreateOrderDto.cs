@@ -1,6 +1,11 @@
 // Shape of data required to create a new order (POST /api/orders). Note
 // there's no Status field here — every new order starts Pending automatically
 // (set in the Order entity itself), the client never gets to choose it.
+//
+// No CreatedByUserId here either — the creator is always the caller, read
+// from their validated JWT rather than trusted from the request body (a
+// client-supplied creator id would let anyone attribute an order to someone
+// else).
 using System.ComponentModel.DataAnnotations;
 
 namespace db.Service.DTOs.Orders;
@@ -10,10 +15,6 @@ public class CreateOrderDto
     // Sent as the enum's name: "In" or "Out".
     [Required]
     public string Type { get; set; } = string.Empty;
-
-    // No login yet, so the client has to say who's creating this order.
-    [Required]
-    public int CreatedByUserId { get; set; }
 
     // Must contain at least one product line — enforced in OrderService,
     // since [MinLength] on a collection doesn't reliably catch an empty

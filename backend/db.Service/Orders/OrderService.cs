@@ -25,8 +25,19 @@ public class OrderService : IOrderService
     // response can include the product's name), and the creator/processor
     // users (so the response can show usernames instead of raw ids) —
     // .Include loads those related rows alongside the order in one query.
-    public async Task<List<OrderResponseDto>> GetAllAsync(int? createdByUserId, int? involvingUserId = null)
+    public async Task<List<OrderResponseDto>> GetAllAsync(
+        int? createdByUserId, int? involvingUserId, int callerId, string callerRole)
     {
+        // A plain User can only ever see their own orders — force the
+        // filter to their own id and drop involvingUserId, regardless of
+        // what the request asked for, instead of trusting the client to
+        // only ever ask nicely for its own data.
+        if (!IsAdminOrHigher(callerRole))
+        {
+            createdByUserId = callerId;
+            involvingUserId = null;
+        }
+
         var query = _context.orders
             .Include(o => o.OrderItems)
             .ThenInclude(oi => oi.Product)
@@ -48,18 +59,25 @@ public class OrderService : IOrderService
         return orders.Select(OrderResponseDto.FromEntity).ToList();
     }
 
-    public async Task<OrderResponseDto> GetByIdAsync(int id)
+    public async Task<OrderResponseDto> GetByIdAsync(int id, int callerId, string callerRole)
     {
         var order = await LoadOrderAsync(id);
+
+        var isOwner = order.CreatedByUserId == callerId || order.ProcessedByUserId == callerId;
+        if (!isOwner && !IsAdminOrHigher(callerRole))
+        {
+            throw new ForbiddenException("You can only view orders you created or processed.");
+        }
+
         return OrderResponseDto.FromEntity(order);
     }
 
-    // CREATE: just records the order as Pending — no stock is touched here
-    // at all. Stock only changes once an Admin Confirms the order (see
-    // ConfirmAsync), so a Pending order is purely a request, not yet a real
-    // effect on inventory. Price is still snapshotted here though, since
-    // that reflects what was offered at the moment the request was made.
-    public async Task<OrderResponseDto> CreateAsync(CreateOrderDto dto)
+    // CREATE: records the order as Pending — no stock is touched here at
+    // all — UNLESS the creator is themselves an Admin/SuperAdmin, in which
+    // case it's confirmed immediately (see below). Price is still
+    // snapshotted here regardless, since that reflects what was offered at
+    // the moment the request was made.
+    public async Task<OrderResponseDto> CreateAsync(CreateOrderDto dto, int createdByUserId)
     {
         if (dto.Items.Count == 0)
         {
@@ -71,10 +89,10 @@ public class OrderService : IOrderService
             throw new ArgumentException($"'{dto.Type}' is not a valid order type. Use 'In' or 'Out'.");
         }
 
-        var creator = await _context.users.FindAsync(dto.CreatedByUserId);
+        var creator = await _context.users.FindAsync(createdByUserId);
         if (creator is null)
         {
-            throw new NotFoundException($"User with id {dto.CreatedByUserId} was not found.");
+            throw new NotFoundException($"User with id {createdByUserId} was not found.");
         }
 
         // Load every distinct product referenced by this order in one query
@@ -123,7 +141,7 @@ public class OrderService : IOrderService
             // Status defaults to Pending on the entity itself.
             OrderDate = DateTime.UtcNow,
             TotalPrice = totalPrice,
-            CreatedByUserId = dto.CreatedByUserId,
+            CreatedByUserId = createdByUserId,
             // Set directly (we already fetched it above) rather than
             // relying on EF Core to load it — this Order isn't coming from
             // a query with .Include, so the navigation property would
@@ -131,6 +149,18 @@ public class OrderService : IOrderService
             CreatedByUser = creator,
             OrderItems = orderItems
         };
+
+        // An Admin/SuperAdmin creating an order would just have to turn
+        // around and Confirm their own request anyway (they're already
+        // trusted to confirm anyone's) — skip that redundant self-approval
+        // step and apply the stock effect immediately, same as ConfirmAsync
+        // would. A plain User's order still starts Pending as before.
+        if (creator.Role == UserRole.Admin || creator.Role == UserRole.SuperAdmin)
+        {
+            ApplyStock(order);
+            order.Status = OrderStatus.Confirmed;
+            order.ProcessedByUserId = createdByUserId;
+        }
 
         _context.orders.Add(order);
         await _context.SaveChangesAsync();
@@ -142,10 +172,10 @@ public class OrderService : IOrderService
     // first time — In adds, Out subtracts (rejecting if any product doesn't
     // have enough stock *right now*, which may differ from when the order
     // was first created).
-    public async Task<OrderResponseDto> ConfirmAsync(int id, ProcessOrderDto dto)
+    public async Task<OrderResponseDto> ConfirmAsync(int id, int actingUserId, string actingRole)
     {
         var order = await LoadOrderAsync(id);
-        await EnsureActingAdminAsync(dto);
+        EnsureActingAdmin(actingRole);
 
         if (order.Status != OrderStatus.Pending)
         {
@@ -155,7 +185,7 @@ public class OrderService : IOrderService
         ApplyStock(order);
 
         order.Status = OrderStatus.Confirmed;
-        order.ProcessedByUserId = dto.ActingUserId;
+        order.ProcessedByUserId = actingUserId;
 
         await _context.SaveChangesAsync();
         return OrderResponseDto.FromEntity(order);
@@ -164,10 +194,10 @@ public class OrderService : IOrderService
     // COMPLETE: Admin-only, and only once Confirmed. Just finalizes the
     // order — no stock change, because the stock effect already happened
     // back in ConfirmAsync.
-    public async Task<OrderResponseDto> CompleteAsync(int id, ProcessOrderDto dto)
+    public async Task<OrderResponseDto> CompleteAsync(int id, int actingUserId, string actingRole)
     {
         var order = await LoadOrderAsync(id);
-        await EnsureActingAdminAsync(dto);
+        EnsureActingAdmin(actingRole);
 
         if (order.Status != OrderStatus.Confirmed)
         {
@@ -175,7 +205,7 @@ public class OrderService : IOrderService
         }
 
         order.Status = OrderStatus.Completed;
-        order.ProcessedByUserId = dto.ActingUserId;
+        order.ProcessedByUserId = actingUserId;
 
         await _context.SaveChangesAsync();
         return OrderResponseDto.FromEntity(order);
@@ -185,10 +215,10 @@ public class OrderService : IOrderService
     // change ConfirmAsync applied: an In order gave stock, so cancelling
     // takes it back (rejecting if that would go negative); an Out order took
     // stock, so cancelling gives it back.
-    public async Task<OrderResponseDto> CancelAsync(int id, ProcessOrderDto dto)
+    public async Task<OrderResponseDto> CancelAsync(int id, int actingUserId, string actingRole)
     {
         var order = await LoadOrderAsync(id);
-        await EnsureActingAdminAsync(dto);
+        EnsureActingAdmin(actingRole);
 
         if (order.Status != OrderStatus.Confirmed)
         {
@@ -198,7 +228,7 @@ public class OrderService : IOrderService
         ReverseStock(order, "cancel");
 
         order.Status = OrderStatus.Cancelled;
-        order.ProcessedByUserId = dto.ActingUserId;
+        order.ProcessedByUserId = actingUserId;
 
         await _context.SaveChangesAsync();
         return OrderResponseDto.FromEntity(order);
@@ -211,9 +241,10 @@ public class OrderService : IOrderService
     // record; a Confirmed order did have its stock effect applied, so
     // deleting it reverses that first, exactly like Cancel. Completed/
     // Cancelled orders' stock effects are already final/reversed either way.
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(int id, string actingRole)
     {
         var order = await LoadOrderAsync(id);
+        EnsureActingAdmin(actingRole);
 
         if (order.Status == OrderStatus.Confirmed)
         {
@@ -324,27 +355,21 @@ public class OrderService : IOrderService
         return order;
     }
 
-    // Shared by CompleteAsync/CancelAsync: parse the passed-in role and
-    // confirm the acting user is a real user and at least an Admin (Admin or
-    // SuperAdmin — SuperAdmin has every Admin power plus more). This is the
-    // placeholder role check the spec describes — not real security, since
-    // any client can just claim a role until the Auth bonus adds real login.
-    private async Task EnsureActingAdminAsync(ProcessOrderDto dto)
+    // Shared by ConfirmAsync/CompleteAsync/CancelAsync/DeleteAsync: confirm
+    // the acting role (read straight from the caller's validated JWT, not a
+    // client-supplied field) is at least an Admin. The controller's
+    // [Authorize(Roles = "Admin,SuperAdmin")] already enforces this before
+    // the request reaches here — this is a defense-in-depth check at the
+    // service boundary, same pattern used by ProductService/UserService.
+    private static void EnsureActingAdmin(string actingRole)
     {
-        var actingUser = await _context.users.FindAsync(dto.ActingUserId);
-        if (actingUser is null)
+        if (!IsAdminOrHigher(actingRole))
         {
-            throw new NotFoundException($"User with id {dto.ActingUserId} was not found.");
-        }
-
-        if (!Enum.TryParse<UserRole>(dto.Role, ignoreCase: true, out var role))
-        {
-            throw new ArgumentException($"'{dto.Role}' is not a valid role. Use 'User', 'Admin', or 'SuperAdmin'.");
-        }
-
-        if (role != UserRole.Admin && role != UserRole.SuperAdmin)
-        {
-            throw new ForbiddenException("Only an Admin can confirm, complete, or cancel an order.");
+            throw new ForbiddenException("Only an Admin can confirm, complete, cancel, or delete an order.");
         }
     }
+
+    private static bool IsAdminOrHigher(string role) =>
+        Enum.TryParse<UserRole>(role, ignoreCase: true, out var parsed)
+        && (parsed == UserRole.Admin || parsed == UserRole.SuperAdmin);
 }

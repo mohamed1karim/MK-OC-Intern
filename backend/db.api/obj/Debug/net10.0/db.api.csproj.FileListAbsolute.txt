@@ -163,3 +163,5 @@ C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.api\bin\Debug\net10.0\zh-Hant\Micr
 C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.api\bin\Debug\net10.0\Swashbuckle.AspNetCore.Swagger.dll
 C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.api\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.api\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerUI.dll
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.api\obj\Debug\net10.0\db.api.sourcelink.json
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.api\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll

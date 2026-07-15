@@ -3,9 +3,9 @@
 // happen through Orders (In/Out), so editing a product can never touch
 // stock directly — that would let stock drift out of sync with order history.
 //
-// ActingUserId/Role are the same placeholder pattern as CreateProductDto —
-// editing a product is Admin/SuperAdmin only, checked in
-// ProductService.UpdateAsync.
+// No ActingUserId/Role here — editing a product is Admin/SuperAdmin only,
+// enforced via [Authorize(Roles = ...)] on the controller, with the acting
+// user's id/role read from their validated JWT.
 using System.ComponentModel.DataAnnotations;
 
 namespace db.Service.DTOs.Products;
@@ -21,10 +21,4 @@ public class UpdateProductDto
 
     [Range(0, double.MaxValue, ErrorMessage = "Price cannot be negative.")]
     public decimal Price { get; set; }
-
-    [Required]
-    public int ActingUserId { get; set; }
-
-    [Required]
-    public string Role { get; set; } = string.Empty;
 }

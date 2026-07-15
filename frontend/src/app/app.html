@@ -1,0 +1,232 @@
+<div class="flex h-screen overflow-hidden">
+  <!-- Mobile-only backdrop, closes the drawer on click -->
+  <div
+    *ngIf="auth.currentUser() && isHandset() && sidenavOpen()"
+    class="fixed inset-0 z-30 bg-black/50"
+    (click)="toggleSidenav()"
+  ></div>
+
+  <aside
+    *ngIf="auth.currentUser()"
+    class="flex w-60 flex-col border-r border-white/10 bg-white/8 text-white shadow-2xl backdrop-blur-xl transition-transform duration-200"
+    [ngClass]="
+      isHandset()
+        ? ['fixed', 'inset-y-0', 'left-0', 'z-40', sidenavOpen() ? 'translate-x-0' : '-translate-x-full']
+        : ['static', 'translate-x-0']
+    "
+  >
+    <div class="flex items-center gap-2 px-5 py-5 text-lg font-extrabold">
+      <span class="icon-badge icon-badge-products">
+        <span class="material-icons">inventory_2</span>
+      </span>
+      <span class="bg-gradient-to-r from-cyan-300 to-violet-300 bg-clip-text text-transparent">WMS</span>
+    </div>
+
+    <nav class="flex flex-col gap-1 px-3">
+      <a
+        routerLink="/home"
+        routerLinkActive="!bg-white !text-violet-900 shadow-lg"
+        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+        (click)="closeSidenavOnMobile()"
+      >
+        <span class="material-icons text-xl">home</span>
+        <span class="text-sm font-medium">Home</span>
+      </a>
+      <div class="group relative">
+        <a
+          routerLink="/products"
+          routerLinkActive="!bg-white !text-violet-900 shadow-lg"
+          class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          (click)="closeSidenavOnMobile()"
+        >
+          <span class="material-icons text-xl">inventory_2</span>
+          <span class="text-sm font-medium">Products</span>
+        </a>
+        <div
+          *ngIf="isAdmin"
+          class="ml-8 flex max-h-0 flex-col gap-1 overflow-hidden opacity-0 transition-all duration-150 group-hover:max-h-20 group-hover:opacity-100"
+        >
+          <a
+            routerLink="/products/new"
+            routerLinkActive="text-cyan-300 font-medium"
+            class="rounded-lg px-3 py-1.5 text-sm text-white/50 hover:bg-white/10 hover:text-white"
+            (click)="closeSidenavOnMobile()"
+          >
+            Add Product
+          </a>
+        </div>
+      </div>
+      <div class="group relative">
+        <a
+          routerLink="/orders"
+          routerLinkActive="!bg-white !text-violet-900 shadow-lg"
+          class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          (click)="closeSidenavOnMobile()"
+        >
+          <span class="material-icons text-xl">receipt_long</span>
+          <span class="text-sm font-medium">Orders</span>
+        </a>
+        <div
+          class="ml-8 flex max-h-0 flex-col gap-1 overflow-hidden opacity-0 transition-all duration-150 group-hover:max-h-20 group-hover:opacity-100"
+        >
+          <a
+            routerLink="/cart"
+            routerLinkActive="text-cyan-300 font-medium"
+            class="rounded-lg px-3 py-1.5 text-sm text-white/50 hover:bg-white/10 hover:text-white"
+            (click)="closeSidenavOnMobile()"
+          >
+            Cart
+          </a>
+        </div>
+      </div>
+      <a
+        *ngIf="isAdmin"
+        routerLink="/users"
+        routerLinkActive="!bg-white !text-violet-900 shadow-lg"
+        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+        (click)="closeSidenavOnMobile()"
+      >
+        <span class="material-icons text-xl">group</span>
+        <span class="text-sm font-medium">Users</span>
+      </a>
+      <a
+        *ngIf="isAdmin"
+        routerLink="/stock-history"
+        routerLinkActive="!bg-white !text-violet-900 shadow-lg"
+        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+        (click)="closeSidenavOnMobile()"
+      >
+        <span class="material-icons text-xl">history</span>
+        <span class="text-sm font-medium">Stock History</span>
+      </a>
+      <a
+        *ngIf="isAdmin"
+        routerLink="/analytics"
+        routerLinkActive="!bg-white !text-violet-900 shadow-lg"
+        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+        (click)="closeSidenavOnMobile()"
+      >
+        <span class="material-icons text-xl">bar_chart</span>
+        <span class="text-sm font-medium">Analytics</span>
+      </a>
+    </nav>
+  </aside>
+
+  <div class="flex flex-1 flex-col overflow-y-auto">
+    <header
+      *ngIf="auth.currentUser()"
+      class="sticky top-0 z-20 flex items-center gap-3 border-b border-white/10 bg-white/8 px-4 py-3 text-white shadow-lg backdrop-blur-xl"
+    >
+      <button
+        *ngIf="isHandset()"
+        class="rounded-md p-2 text-white/80 hover:bg-white/10 hover:text-white"
+        (click)="toggleSidenav()"
+        aria-label="Toggle menu"
+      >
+        <span class="material-icons">menu</span>
+      </button>
+
+      <span class="flex-1"></span>
+
+      <span
+        class="rounded-full px-3 py-1 text-xs font-semibold"
+        [ngClass]="{
+          'bg-badge-amber-bg text-badge-amber-text': auth.currentUser()!.role === 'Admin',
+          'bg-badge-violet-bg text-badge-violet-text': auth.currentUser()!.role === 'SuperAdmin',
+          'bg-badge-indigo-bg text-badge-indigo-text': auth.currentUser()!.role === 'User'
+        }"
+      >
+        {{ auth.currentUser()!.role }}
+      </span>
+
+      <div class="relative">
+        <button
+          class="relative rounded-full p-1 text-white/80 hover:bg-white/10 hover:text-white"
+          (click)="toggleNotificationMenu()"
+          aria-label="Notifications"
+        >
+          <span class="material-icons text-2xl">notifications</span>
+          <span
+            *ngIf="notifications.unreadCount() > 0"
+            class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-red-500 px-1 text-[10px] font-semibold text-white"
+          >
+            {{ notifications.unreadCount() }}
+          </span>
+        </button>
+
+        <div *ngIf="notificationMenuOpen()" class="fixed inset-0 z-30" (click)="toggleNotificationMenu()"></div>
+
+        <div
+          *ngIf="notificationMenuOpen()"
+          class="card-surface absolute right-0 z-40 mt-2 max-h-96 w-80 overflow-y-auto"
+        >
+          <div class="border-b border-border-subtle px-4 py-2 text-sm font-semibold">Notifications</div>
+
+          <div
+            class="px-4 py-6 text-center text-sm text-gray-500"
+            *ngIf="notifications.notifications().length === 0"
+          >
+            You're all caught up.
+          </div>
+
+          <a
+            *ngFor="let n of notifications.notifications()"
+            [routerLink]="n.link"
+            (click)="notificationMenuOpen.set(false)"
+            class="flex items-start gap-3 border-b border-border-subtle px-4 py-3 text-sm last:border-0 hover:bg-violet-50"
+          >
+            <span class="material-icons text-lg text-violet-400">{{ n.icon }}</span>
+            <span>{{ n.message }}</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="relative">
+        <button
+          class="rounded-full p-1 text-white/80 hover:bg-white/10 hover:text-white"
+          (click)="toggleAccountMenu()"
+          aria-label="Account menu"
+        >
+          <span class="material-icons text-3xl">account_circle</span>
+        </button>
+
+        <div *ngIf="accountMenuOpen()" class="fixed inset-0 z-30" (click)="toggleAccountMenu()"></div>
+
+        <div *ngIf="accountMenuOpen()" class="card-surface absolute right-0 z-40 mt-2 w-48">
+          <div class="border-b border-border-subtle px-4 py-2 text-sm text-gray-500">
+            {{ auth.currentUser()!.username }}
+          </div>
+          <button
+            class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-violet-50"
+            (click)="logout()"
+          >
+            <span class="material-icons text-base">logout</span>
+            <span>Log out</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
+
+<button
+  *ngIf="auth.currentUser() && cart.totalItems() > 0 && currentUrl() !== '/cart'"
+  (click)="goToCart()"
+  class="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-white shadow-lg hover:bg-blue-700"
+>
+  <span class="material-icons">shopping_cart</span>
+  <span class="flex h-6 min-w-6 items-center justify-center rounded-full bg-white/25 px-1.5 text-sm">
+    {{ cart.totalItems() }}
+  </span>
+  <span
+    class="rounded-full px-2 py-0.5 text-xs font-semibold uppercase"
+    [ngClass]="cart.type() === 'Out' ? 'bg-red-500/60' : 'bg-black/15'"
+  >
+    {{ cart.type() }}
+  </span>
+  <span class="font-bold">{{ cart.totalPrice() | currency }}</span>
+</button>

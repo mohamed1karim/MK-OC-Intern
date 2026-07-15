@@ -29,6 +29,9 @@ public class AppDbcontext : DbContext
     public DbSet<Order> orders { get; set; }
     public DbSet<OrderItem> orderItems { get; set; }
 
+    // Cached AI analytics reports, used by AnalyticsReportService.
+    public DbSet<StoredReport> storedReports { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<User>(e =>
@@ -68,6 +71,7 @@ public class AppDbcontext : DbContext
             e.Property(p => p.Name).IsRequired().HasMaxLength(200);
 
             e.Property(p => p.Description).HasMaxLength(2000);
+            e.Property(p => p.LongDescription).HasMaxLength(2000);
 
             // decimal(18,2): up to 18 total digits, 2 after the decimal
             // point — standard precision for money values. Without this,
@@ -135,6 +139,12 @@ public class AppDbcontext : DbContext
                 .WithMany()
                 .HasForeignKey(oi => oi.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<StoredReport>(e =>
+        {
+            e.HasKey(r => r.Id);
+            e.Property(r => r.ReportJson).IsRequired();
         });
     }
 }

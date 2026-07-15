@@ -1,0 +1,54 @@
+<div class="mx-auto max-w-3xl p-6">
+  <a routerLink="/users" class="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400">← Back to users</a>
+
+  <header class="mt-3 mb-5 flex items-baseline justify-between">
+    <h1 class="text-2xl font-semibold" *ngIf="targetUser() as u">Orders for {{ u.username }}</h1>
+    <h1 class="text-2xl font-semibold" *ngIf="!targetUser() && !loading()">Orders</h1>
+    <span class="text-sm text-gray-500 dark:text-gray-400" *ngIf="!loading() && canView">{{ orders().length }} total</span>
+  </header>
+
+  <div class="text-gray-500 dark:text-gray-400" *ngIf="!auth.currentUser()">
+    Please <a routerLink="/login" class="text-blue-600 hover:underline dark:text-blue-400">log in</a> to view this.
+  </div>
+
+  <div class="flex items-center gap-3 text-gray-500 dark:text-gray-400" *ngIf="auth.currentUser() && loading()">
+    <app-loading-spinner [size]="28" />
+    <span>Loading…</span>
+  </div>
+
+  <div class="text-red-600" *ngIf="error()">{{ error() }}</div>
+
+  <div class="text-red-600" *ngIf="auth.currentUser() && !loading() && !error() && targetUser() && !canView">
+    You don't have permission to view this person's orders.
+  </div>
+
+  <div class="text-gray-500 dark:text-gray-400" *ngIf="canView && !loading() && !error() && orders().length === 0">
+    No orders involve this person yet.
+  </div>
+
+  <div class="flex flex-col gap-2" *ngIf="canView && !loading() && !error() && orders().length > 0">
+    <a
+      *ngFor="let o of orders()"
+      [routerLink]="['/orders', o.id]"
+      class="card-surface card-surface-hover flex cursor-pointer flex-col gap-2 p-3"
+    >
+      <div class="flex items-center gap-2">
+        <span class="text-sm font-semibold">Order #{{ o.id }}</span>
+        <app-status-badge [label]="o.type" [variant]="o.type === 'Out' ? 'red' : 'green'" />
+        <!-- Chronological order: she can only have confirmed/completed/
+             cancelled an order after requesting it (or after someone else
+             requested it), so Requested always comes first. -->
+        <app-status-badge *ngIf="wasCreatedBy(o)" label="Requested" variant="gray" />
+        <app-status-badge
+          *ngIf="wasProcessedBy(o)"
+          [label]="processedActionLabel(o)"
+          [variant]="processedTagVariant(o)"
+        />
+      </div>
+      <div class="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
+        <span>{{ o.orderDate | date: 'medium' }}</span>
+        <span class="ml-auto font-semibold text-gray-900 dark:text-gray-100">{{ o.totalPrice | currency }}</span>
+      </div>
+    </a>
+  </div>
+</div>

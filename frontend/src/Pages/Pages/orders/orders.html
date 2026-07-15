@@ -1,0 +1,119 @@
+<div class="mx-auto max-w-3xl p-6">
+  <header class="mb-5 flex items-baseline justify-between">
+    <h1 class="text-2xl font-semibold">{{ isAdmin ? 'All Orders' : 'My Orders' }}</h1>
+    <div class="flex items-center gap-4">
+      <span class="text-sm text-gray-500 dark:text-gray-400" *ngIf="!loading() && auth.currentUser()">
+        {{
+          filteredOrders().length === orders().length
+            ? orders().length + ' total'
+            : filteredOrders().length + ' of ' + orders().length + ' shown'
+        }}
+      </span>
+      <button
+        class="inline-flex items-center gap-1 rounded-lg border border-border-subtle px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
+        *ngIf="!loading() && filteredOrders().length > 0"
+        (click)="exportCsv()"
+      >
+        <span class="material-icons text-base">download</span>
+        Export CSV
+      </button>
+    </div>
+  </header>
+
+  <div class="text-gray-500 dark:text-gray-400" *ngIf="!auth.currentUser()">
+    Please <a routerLink="/login" class="text-blue-600 hover:underline dark:text-blue-400">log in</a> to view your orders.
+  </div>
+
+  <div class="flex items-center gap-3 text-gray-500 dark:text-gray-400" *ngIf="loading() && auth.currentUser()">
+    <app-loading-spinner [size]="28" />
+    <span>Loading orders…</span>
+  </div>
+
+  <div class="text-red-600" *ngIf="error()">{{ error() }}</div>
+
+  <div class="card-surface mb-5 flex flex-wrap items-center gap-3 p-4" *ngIf="auth.currentUser() && !loading() && !error() && orders().length > 0">
+    <div>
+      <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Type</label>
+      <select
+        class="rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+        [ngModel]="typeFilter()"
+        (ngModelChange)="typeFilter.set($event)"
+        name="typeFilter"
+      >
+        <option value="All">All types</option>
+        <option value="In">In</option>
+        <option value="Out">Out</option>
+      </select>
+    </div>
+    <div>
+      <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Status</label>
+      <select
+        class="rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+        [ngModel]="statusFilter()"
+        (ngModelChange)="statusFilter.set($event)"
+        name="statusFilter"
+      >
+        <option value="All">All statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="Confirmed">Confirmed</option>
+        <option value="Completed">Completed</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+    </div>
+    <div>
+      <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Min total</label>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        class="w-28 rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+        [ngModel]="minTotal()"
+        (ngModelChange)="minTotal.set($event)"
+        name="minTotal"
+      />
+    </div>
+    <div>
+      <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Max total</label>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        class="w-28 rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+        [ngModel]="maxTotal()"
+        (ngModelChange)="maxTotal.set($event)"
+        name="maxTotal"
+      />
+    </div>
+    <button class="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400" (click)="clearFilters()">Clear</button>
+  </div>
+
+  <div class="text-gray-500 dark:text-gray-400" *ngIf="auth.currentUser() && !loading() && !error() && orders().length === 0">
+    {{ isAdmin ? 'There are no orders yet.' : "You haven't placed any orders yet." }}
+  </div>
+
+  <div
+    class="text-gray-500 dark:text-gray-400"
+    *ngIf="auth.currentUser() && !loading() && !error() && orders().length > 0 && filteredOrders().length === 0"
+  >
+    No orders match your filters.
+  </div>
+
+  <div class="stagger-list flex flex-col gap-2" *ngIf="auth.currentUser() && !loading() && !error() && filteredOrders().length > 0">
+    <a
+      *ngFor="let o of filteredOrders()"
+      [routerLink]="['/orders', o.id]"
+      class="card-surface card-surface-hover flex cursor-pointer flex-col gap-2 p-3"
+    >
+      <div class="flex items-center gap-2">
+        <span class="text-sm font-semibold">Order #{{ o.id }}</span>
+        <app-status-badge [label]="o.type" [variant]="o.type === 'Out' ? 'red' : 'green'" />
+        <app-status-badge [label]="o.status" [variant]="statusVariant(o.status)" />
+      </div>
+      <div class="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
+        <span>{{ o.orderDate | date: 'medium' }}</span>
+        <span *ngIf="isAdmin">by {{ o.createdByUsername }}</span>
+        <span class="ml-auto font-semibold text-gray-900 dark:text-gray-100">{{ o.totalPrice | currency }}</span>
+      </div>
+    </a>
+  </div>
+</div>

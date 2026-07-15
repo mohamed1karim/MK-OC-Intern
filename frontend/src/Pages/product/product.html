@@ -1,0 +1,195 @@
+<div class="mx-auto max-w-3xl p-6">
+  <header class="mb-5 flex items-baseline justify-between">
+    <h1 class="text-2xl font-semibold">Products</h1>
+    <div class="flex items-center gap-4">
+      <label class="flex items-center gap-2 text-sm" *ngIf="isAdmin && !loading()">
+        <input
+          type="checkbox"
+          class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          [ngModel]="showDeleted()"
+          (ngModelChange)="toggleShowDeleted()"
+          name="showDeleted"
+        />
+        Show deleted
+      </label>
+      <span class="text-sm text-gray-500 dark:text-gray-400" *ngIf="!loading()">
+        {{
+          filteredProducts().length === products().length
+            ? products().length + ' total'
+            : filteredProducts().length + ' of ' + products().length + ' shown'
+        }}
+      </span>
+      <button
+        class="inline-flex items-center gap-1 rounded-lg border border-border-subtle px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
+        *ngIf="!loading() && filteredProducts().length > 0"
+        (click)="exportCsv()"
+      >
+        <span class="material-icons text-base">download</span>
+        Export CSV
+      </button>
+      <a
+        class="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+        *ngIf="isAdmin"
+        routerLink="/products/new"
+      >
+        <span class="material-icons text-base">add</span>
+        Add Product
+      </a>
+    </div>
+  </header>
+
+  <div class="flex items-center gap-3 p-6 text-gray-500 dark:text-gray-400" *ngIf="loading()">
+    <app-loading-spinner [size]="28" />
+    <span>Loading products…</span>
+  </div>
+
+  <div class="p-6 text-red-600" *ngIf="error()">{{ error() }}</div>
+
+  <div
+    class="mb-5 flex items-center gap-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_6px_16px_-6px_rgba(181,71,8,0.14)] dark:bg-amber-950/40 dark:text-amber-300"
+    *ngIf="!loading() && lowStockProducts().length > 0"
+  >
+    <span class="material-icons text-amber-500">warning</span>
+    <span>
+      {{ lowStockProducts().length }} product{{ lowStockProducts().length === 1 ? '' : 's' }} running low on stock
+      (at or below {{ lowStockThreshold }} units).
+    </span>
+    <button
+      class="ml-auto whitespace-nowrap rounded-lg border border-amber-300 px-3 py-1 font-medium hover:bg-amber-100 dark:border-amber-700 dark:hover:bg-amber-900/40"
+      (click)="lowStockOnly.set(true)"
+      *ngIf="!lowStockOnly()"
+    >
+      Show only these
+    </button>
+  </div>
+
+  <div class="mb-5 flex items-center gap-3" *ngIf="auth.currentUser()">
+    <span class="text-sm text-gray-500 dark:text-gray-400">Order type:</span>
+    <div class="inline-flex rounded-lg border border-border-subtle p-0.5">
+      <button
+        class="rounded-md px-3 py-1 text-sm font-medium"
+        [ngClass]="cart.type() === 'In' ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 dark:hover:bg-gray-800'"
+        (click)="cart.setType('In')"
+      >
+        In (receiving stock)
+      </button>
+      <button
+        class="rounded-md px-3 py-1 text-sm font-medium"
+        [ngClass]="cart.type() === 'Out' ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 dark:hover:bg-gray-800'"
+        (click)="cart.setType('Out')"
+      >
+        Out (taking stock)
+      </button>
+    </div>
+  </div>
+
+  <div class="card-surface mb-5 flex flex-wrap items-center gap-3 p-4" *ngIf="!loading() && !error() && products().length > 0">
+    <div>
+      <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Search</label>
+      <input
+        type="text"
+        placeholder="Name or description…"
+        class="w-56 rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+        [ngModel]="searchText()"
+        (ngModelChange)="searchText.set($event)"
+        name="searchText"
+      />
+    </div>
+    <div>
+      <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Min price</label>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        class="w-28 rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+        [ngModel]="minPrice()"
+        (ngModelChange)="minPrice.set($event)"
+        name="minPrice"
+      />
+    </div>
+    <div>
+      <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Max price</label>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        class="w-28 rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+        [ngModel]="maxPrice()"
+        (ngModelChange)="maxPrice.set($event)"
+        name="maxPrice"
+      />
+    </div>
+    <label class="flex items-center gap-2 text-sm">
+      <input
+        type="checkbox"
+        class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        [ngModel]="lowStockOnly()"
+        (ngModelChange)="lowStockOnly.set($event)"
+        name="lowStockOnly"
+      />
+      Low stock only
+    </label>
+    <button class="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400" (click)="clearFilters()">Clear</button>
+  </div>
+
+  <div class="p-6 text-gray-500 dark:text-gray-400" *ngIf="!loading() && !error() && products().length === 0">
+    No products yet.
+  </div>
+
+  <div class="p-6 text-gray-500 dark:text-gray-400" *ngIf="!loading() && !error() && products().length > 0 && filteredProducts().length === 0">
+    No products match your filters.
+  </div>
+
+  <div class="card-surface overflow-x-auto p-4" *ngIf="!loading() && !error() && filteredProducts().length > 0">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border-subtle text-left">
+          <th class="py-2 font-semibold">Name</th>
+          <th class="py-2 font-semibold">Description</th>
+          <th class="py-2 text-right font-semibold">Price</th>
+          <th class="py-2 text-right font-semibold">Quantity</th>
+          <th class="py-2 font-semibold">Last updated</th>
+          <th class="py-2 font-semibold" *ngIf="auth.currentUser()">Add to Cart</th>
+        </tr>
+      </thead>
+      <tbody class="stagger-list">
+        <tr *ngFor="let p of filteredProducts()" class="border-b border-border-subtle last:border-0">
+          <td class="py-2 font-medium whitespace-nowrap">
+            <a [routerLink]="['/products', p.id]" class="hover:underline">{{ p.name }}</a>
+            <app-status-badge *ngIf="p.isDeleted" label="Deleted" variant="gray" class="ml-2" />
+          </td>
+          <td class="py-2 max-w-xs">{{ p.description }}</td>
+          <td class="py-2 text-right">{{ p.price | currency }}</td>
+          <td class="py-2 text-right">
+            <app-status-badge [label]="p.quantity" [variant]="isLowStock(p) ? 'red' : 'indigo'" />
+          </td>
+          <td class="py-2 whitespace-nowrap text-gray-500 dark:text-gray-400">{{ p.updatedAt | date: 'medium' }}</td>
+          <td class="py-2" *ngIf="auth.currentUser()">
+            <button
+              class="rounded-lg border border-border-subtle px-3 py-1 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
+              *ngIf="p.isDeleted && isAdmin"
+              (click)="restoreProduct(p)"
+            >
+              Restore
+            </button>
+            <div class="flex items-center gap-2" *ngIf="!p.isDeleted">
+              <input
+                type="number"
+                min="1"
+                class="w-16 rounded-lg border-gray-300 text-center text-sm focus:border-blue-500 focus:ring-blue-500"
+                [(ngModel)]="quantityDrafts[p.id]"
+                [name]="'quantity-' + p.id"
+              />
+              <button
+                class="rounded-lg bg-blue-600 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+                (click)="addToCart(p)"
+              >
+                Add
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

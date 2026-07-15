@@ -19,6 +19,7 @@ public class UserResponseDto
     public string Email { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public bool IsDeleted { get; set; }
 
     // A small helper that builds this DTO from a User entity, so there's one
     // obvious place doing the User -> DTO conversion instead of repeating the
@@ -31,7 +32,8 @@ public class UserResponseDto
             Username = user.Username,
             Email = user.Email,
             Role = user.Role.ToString(),
-            CreatedAt = user.CreatedAt
+            CreatedAt = user.CreatedAt,
+            IsDeleted = user.IsDeleted
         };
     }
 }

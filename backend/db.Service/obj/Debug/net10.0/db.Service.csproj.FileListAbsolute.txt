@@ -13,3 +13,4 @@ C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Service\obj\Debug\net10.0\db.Servi
 C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Service\obj\Debug\net10.0\refint\db.Service.dll
 C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Service\obj\Debug\net10.0\db.Service.pdb
 C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Service\obj\Debug\net10.0\ref\db.Service.dll
+C:\Users\KARIM\OneDrive\Desktop\OC\backend\db.Service\obj\Debug\net10.0\db.Service.sourcelink.json

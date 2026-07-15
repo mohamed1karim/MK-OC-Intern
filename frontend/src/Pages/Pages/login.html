@@ -1,0 +1,79 @@
+<div class="relative flex min-h-screen items-center justify-center overflow-hidden p-4">
+  <!-- Ambient floating glow orbs behind the card — purely decorative, so
+       they're inert divs rather than anything focusable/interactive. -->
+  <div class="login-orb login-orb-a" aria-hidden="true"></div>
+  <div class="login-orb login-orb-b" aria-hidden="true"></div>
+  <div class="login-orb login-orb-c" aria-hidden="true"></div>
+
+  <div class="card-surface rise-in relative w-full max-w-sm p-6">
+    <div class="icon-badge icon-badge-lg icon-badge-violet mb-4">
+      <span class="material-icons">inventory_2</span>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4">
+      <h1 class="text-2xl">{{ mode() === 'login' ? 'Log in' : 'Sign up' }}</h1>
+
+      <div>
+        <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Username</label>
+        <input
+          type="text"
+          formControlName="username"
+          autofocus
+          class="w-full rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
+          [class.border-red-400]="username.invalid && username.touched"
+          [class.border-gray-300]="!(username.invalid && username.touched)"
+        />
+        <p class="mt-1 text-xs text-red-600" *ngIf="username.invalid && username.touched">Username is required.</p>
+      </div>
+
+      <div *ngIf="mode() === 'signup'">
+        <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Email</label>
+        <input
+          type="email"
+          formControlName="email"
+          class="w-full rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
+          [class.border-red-400]="email.invalid && email.touched"
+          [class.border-gray-300]="!(email.invalid && email.touched)"
+        />
+        <p class="mt-1 text-xs text-red-600" *ngIf="email.hasError('required') && email.touched">Email is required.</p>
+        <p class="mt-1 text-xs text-red-600" *ngIf="email.hasError('email') && email.touched">Enter a valid email address.</p>
+      </div>
+
+      <div>
+        <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Password</label>
+        <input
+          type="password"
+          formControlName="password"
+          class="w-full rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
+          [class.border-red-400]="password.invalid && password.touched"
+          [class.border-gray-300]="!(password.invalid && password.touched)"
+        />
+        <p class="mt-1 text-xs text-red-600" *ngIf="password.hasError('required') && password.touched">Password is required.</p>
+        <p class="mt-1 text-xs text-red-600" *ngIf="password.hasError('minlength') && password.touched">
+          Password must be at least 4 characters.
+        </p>
+      </div>
+
+      <div class="rounded-lg bg-badge-red-bg px-3 py-2 text-sm text-badge-red-text" *ngIf="error()">{{ error() }}</div>
+      <div class="rounded-lg bg-badge-green-bg px-3 py-2 text-sm text-badge-green-text" *ngIf="successMessage()">
+        {{ successMessage() }}
+      </div>
+
+      <button
+        type="submit"
+        class="mt-1 h-10 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+        [disabled]="loading()"
+      >
+        {{ loading() ? (mode() === 'login' ? 'Logging in…' : 'Creating account…') : (mode() === 'login' ? 'Log in' : 'Sign up') }}
+      </button>
+
+      <button
+        type="button"
+        class="self-start text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+        (click)="toggleMode()"
+      >
+        {{ mode() === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Log in' }}
+      </button>
+    </form>
+  </div>
+</div>

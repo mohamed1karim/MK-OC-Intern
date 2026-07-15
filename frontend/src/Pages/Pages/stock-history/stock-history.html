@@ -1,0 +1,131 @@
+<div class="mx-auto max-w-4xl p-6">
+  <header class="mb-5 flex items-baseline justify-between">
+    <h1 class="text-2xl">Stock Movement History</h1>
+    <div class="flex items-center gap-4">
+      <span class="text-sm text-white/60" *ngIf="!loading() && isAdmin">
+        {{
+          filteredMovements().length === movements().length
+            ? movements().length + ' total'
+            : filteredMovements().length + ' of ' + movements().length + ' shown'
+        }}
+      </span>
+      <button
+        class="inline-flex items-center gap-1 rounded-lg border border-border-subtle px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
+        *ngIf="!loading() && filteredMovements().length > 0"
+        (click)="exportCsv()"
+      >
+        <span class="material-icons text-base">download</span>
+        Export CSV
+      </button>
+    </div>
+  </header>
+
+  <div class="text-white/70" *ngIf="!isAdmin">Only Admins can view stock movement history.</div>
+
+  <div class="flex items-center gap-3 text-white/70" *ngIf="loading() && isAdmin">
+    <app-loading-spinner [size]="28" />
+    <span>Loading history…</span>
+  </div>
+
+  <div class="text-red-300" *ngIf="error()">{{ error() }}</div>
+
+  <div
+    class="card-surface mb-5 flex flex-wrap items-center gap-3 p-4"
+    *ngIf="isAdmin && !loading() && !error() && movements().length > 0"
+  >
+    <div>
+      <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Product</label>
+      <select
+        class="rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+        [ngModel]="productFilter()"
+        (ngModelChange)="productFilter.set($event)"
+        name="productFilter"
+      >
+        <option [ngValue]="0">All products</option>
+        <option *ngFor="let p of productOptions()" [ngValue]="p.id">{{ p.name }}</option>
+      </select>
+    </div>
+    <div>
+      <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Type</label>
+      <select
+        class="rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+        [ngModel]="typeFilter()"
+        (ngModelChange)="typeFilter.set($event)"
+        name="typeFilter"
+      >
+        <option value="All">All types</option>
+        <option value="In">In</option>
+        <option value="Out">Out</option>
+      </select>
+    </div>
+    <div>
+      <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Status</label>
+      <select
+        class="rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+        [ngModel]="statusFilter()"
+        (ngModelChange)="statusFilter.set($event)"
+        name="statusFilter"
+      >
+        <option value="All">All statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="Confirmed">Confirmed</option>
+        <option value="Completed">Completed</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+    </div>
+    <button class="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400" (click)="clearFilters()">Clear</button>
+  </div>
+
+  <div class="text-white/70" *ngIf="isAdmin && !loading() && !error() && movements().length === 0">
+    No stock movements yet.
+  </div>
+
+  <div
+    class="text-white/70"
+    *ngIf="isAdmin && !loading() && !error() && movements().length > 0 && filteredMovements().length === 0"
+  >
+    No movements match your filters.
+  </div>
+
+  <div class="card-surface overflow-x-auto p-4" *ngIf="isAdmin && !loading() && !error() && filteredMovements().length > 0">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border-subtle text-left">
+          <th class="py-2 font-semibold">Date</th>
+          <th class="py-2 font-semibold">Product</th>
+          <th class="py-2 font-semibold">Order</th>
+          <th class="py-2 font-semibold">Type</th>
+          <th class="py-2 text-right font-semibold">Quantity</th>
+          <th class="py-2 font-semibold">Status</th>
+          <th class="py-2 font-semibold">Requested by</th>
+          <th class="py-2 font-semibold">Processed by</th>
+        </tr>
+      </thead>
+      <tbody class="stagger-list">
+        <tr *ngFor="let m of filteredMovements()" class="border-b border-border-subtle last:border-0">
+          <td class="py-2 whitespace-nowrap">{{ m.orderDate | date: 'medium' }}</td>
+          <td class="py-2">
+            <a [routerLink]="['/products', m.productId]" class="font-medium hover:underline">{{ m.productName }}</a>
+          </td>
+          <td class="py-2">
+            <a [routerLink]="['/orders', m.orderId]" class="font-medium hover:underline">#{{ m.orderId }}</a>
+          </td>
+          <td class="py-2">
+            <app-status-badge [label]="m.type" [variant]="m.type === 'Out' ? 'red' : 'green'" />
+          </td>
+          <td
+            class="py-2 text-right font-semibold"
+            [ngClass]="m.type === 'In' ? 'text-green-600' : 'text-red-600'"
+          >
+            {{ signedQuantity(m) }}
+          </td>
+          <td class="py-2">
+            <app-status-badge [label]="m.status" [variant]="statusVariant(m.status)" />
+          </td>
+          <td class="py-2 text-gray-500 dark:text-gray-400">{{ m.createdByUsername }}</td>
+          <td class="py-2 text-gray-500 dark:text-gray-400">{{ m.processedByUsername ?? '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

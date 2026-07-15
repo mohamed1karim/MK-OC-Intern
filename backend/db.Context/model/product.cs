@@ -15,7 +15,14 @@ public class Product
     // Also what "search products by name" (a required feature) filters on.
     public string Name { get; set; } = string.Empty;
 
+    // The short description as typed by whoever created/edited this
+    // product — shown in list views (Products table, etc.).
     public string Description { get; set; } = string.Empty;
+
+    // The AI-expanded version of Description (see
+    // GroqProductDescriptionEnhancer), shown on the product's own detail
+    // page. Falls back to Description itself if the AI call ever failed.
+    public string LongDescription { get; set; } = string.Empty;
 
     // Current unit price. OrderItem snapshots this value into its own
     // UnitPrice at order-creation time, so changing Price later never
@@ -36,4 +43,12 @@ public class Product
     // this field existed have no recorded creator.
     public int? CreatedByUserId { get; set; }
     public User? CreatedByUser { get; set; }
+
+    // Soft delete: "deleting" a product just flips this instead of removing
+    // the row. A hard delete would violate the Restrict FK on
+    // OrderItem.Product for any product with order history — soft delete
+    // sidesteps that entirely (the row never disappears, so every historical
+    // order line keeps resolving its product name/price), while still
+    // hiding the product from normal Products-list queries.
+    public bool IsDeleted { get; set; } = false;
 }

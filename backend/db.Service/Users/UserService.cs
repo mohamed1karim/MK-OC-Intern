@@ -4,6 +4,7 @@
 // any of this themselves — they just call these methods.
 using db.Context;
 using db.Context.Model;
+using db.Service.Auth;
 using db.Service.DTOs.Users;
 using db.Service.Exceptions;
 using Microsoft.EntityFrameworkCore;
@@ -16,23 +17,36 @@ public class UserService : IUserService
     // container creates it and hands it to us automatically, because
     // Program.cs registered it earlier with builder.Services.AddDbContext.
     private readonly AppDbcontext _context;
+    private readonly IPasswordHasher _passwordHasher;
 
-    public UserService(AppDbcontext context)
+    public UserService(AppDbcontext context, IPasswordHasher passwordHasher)
     {
         _context = context;
+        _passwordHasher = passwordHasher;
     }
 
     // READ (list): fetch every user, map each one to a response DTO so the
-    // Password field never leaves this layer.
-    public async Task<List<UserResponseDto>> GetAllAsync()
+    // Password field never leaves this layer. Soft-deleted users are hidden
+    // by default — pass includeDeleted (Admin/SuperAdmin views only) to see
+    // them too, e.g. for a "show deleted" toggle.
+    public async Task<List<UserResponseDto>> GetAllAsync(bool includeDeleted = false)
     {
-        var users = await _context.users.ToListAsync();
+        var query = _context.users.AsQueryable();
+        if (!includeDeleted)
+        {
+            query = query.Where(u => !u.IsDeleted);
+        }
+
+        var users = await query.ToListAsync();
         return users.Select(UserResponseDto.FromEntity).ToList();
     }
 
-    // READ (single): look up by primary key. FindAsync returns null if no
-    // row matches — we turn that into a NotFoundException, which the
-    // middleware converts into a 404 response for us.
+    // READ (single): look up by primary key, regardless of deleted status —
+    // callers like the "view this person's order history" page need to
+    // resolve a deleted user's username too, since their historical orders
+    // still reference them. FindAsync returns null if no row matches — we
+    // turn that into a NotFoundException, which the middleware converts into
+    // a 404 response for us.
     public async Task<UserResponseDto> GetByIdAsync(int id)
     {
         var user = await _context.users.FindAsync(id);
@@ -66,7 +80,7 @@ public class UserService : IUserService
         {
             Username = dto.Username,
             Email = dto.Email,
-            Password = dto.Password,
+            Password = _passwordHasher.Hash(dto.Password),
             Role = UserRole.User
         };
 
@@ -78,15 +92,26 @@ public class UserService : IUserService
 
     // UPDATE: find the existing row, make sure the new values don't collide
     // with a *different* user, then overwrite the fields and save. Role is
-    // deliberately untouched here — this endpoint has no authorization
-    // check on who's calling it, so allowing a role change here would let
-    // anyone grant themselves Admin/SuperAdmin through a plain profile edit.
-    public async Task<UserResponseDto> UpdateAsync(int id, UpdateUserDto dto)
+    // deliberately untouched here — this endpoint never accepts a role from
+    // the client, so allowing a role change here would let anyone grant
+    // themselves Admin/SuperAdmin through a plain profile edit. Caller
+    // (from the validated JWT) must be editing their own account, or be
+    // Admin/SuperAdmin editing someone else's — enforced here, not just in
+    // the controller, since this is the actual security boundary.
+    public async Task<UserResponseDto> UpdateAsync(int id, UpdateUserDto dto, int actingUserId, string actingRole)
     {
         var user = await _context.users.FindAsync(id);
         if (user is null)
         {
             throw new NotFoundException($"User with id {id} was not found.");
+        }
+
+        var isSelf = actingUserId == id;
+        var isAdminOrHigher = Enum.TryParse<UserRole>(actingRole, ignoreCase: true, out var role)
+            && (role == UserRole.Admin || role == UserRole.SuperAdmin);
+        if (!isSelf && !isAdminOrHigher)
+        {
+            throw new ForbiddenException("You can only edit your own account.");
         }
 
         // Note the "u.Id != id" — without it, a user updating their own
@@ -101,7 +126,7 @@ public class UserService : IUserService
 
         user.Username = dto.Username;
         user.Email = dto.Email;
-        user.Password = dto.Password;
+        user.Password = _passwordHasher.Hash(dto.Password);
 
         // No explicit "Update" call needed — EF Core is already tracking
         // this entity (we fetched it with FindAsync), so it notices the
@@ -111,10 +136,13 @@ public class UserService : IUserService
         return UserResponseDto.FromEntity(user);
     }
 
-    // DELETE: Admin/SuperAdmin only. Refuses to delete an Admin or
+    // DELETE: Admin/SuperAdmin only. Soft delete — flips IsDeleted instead of
+    // removing the row, so it never hits the Restrict FK on Order.
+    // CreatedByUser/ProcessedByUser (a hard delete would fail there for
+    // anyone with order history). Still refuses to delete an Admin or
     // SuperAdmin target directly — they must be demoted to User first (via
     // DemoteToUserAsync), same protective reasoning as Promote/Demote.
-    public async Task DeleteAsync(int id, AdminActionDto dto)
+    public async Task DeleteAsync(int id, int actingUserId, string actingRole)
     {
         var user = await _context.users.FindAsync(id);
         if (user is null)
@@ -122,7 +150,7 @@ public class UserService : IUserService
             throw new NotFoundException($"User with id {id} was not found.");
         }
 
-        await EnsureActingAdminOrHigherAsync(dto);
+        EnsureActingAdminOrHigher(actingRole);
 
         if (user.Role != UserRole.User)
         {
@@ -130,32 +158,79 @@ public class UserService : IUserService
                 $"Cannot delete: this user is {user.Role}. Demote them to User first.");
         }
 
-        // The database refuses this at the FK level too (Order.CreatedByUser/
-        // ProcessedByUser are Restrict, not Cascade), but checking here first
-        // gives a clean 409 with a clear message instead of a raw 500 from an
-        // unhandled DbUpdateException.
-        var hasOrderHistory = await _context.orders
-            .AnyAsync(o => o.CreatedByUserId == id || o.ProcessedByUserId == id);
-        if (hasOrderHistory)
+        if (user.IsDeleted)
         {
-            throw new ConflictException(
-                "Cannot delete: this user has order history (they created or processed at least one order).");
+            throw new ConflictException("This user is already deleted.");
         }
 
-        _context.users.Remove(user);
+        user.IsDeleted = true;
         await _context.SaveChangesAsync();
     }
 
-    // LOGIN: simple placeholder check — direct Username/Password match
-    // against the Users table. No hashing yet (matches how CreateAsync
-    // currently stores Password as plain text); this gets replaced by real
-    // hashed-password verification once the Auth bonus is built.
+    // RESTORE: Admin/SuperAdmin only. Reverses a soft delete.
+    public async Task<UserResponseDto> RestoreAsync(int id, int actingUserId, string actingRole)
+    {
+        var user = await _context.users.FindAsync(id);
+        if (user is null)
+        {
+            throw new NotFoundException($"User with id {id} was not found.");
+        }
+
+        EnsureActingAdminOrHigher(actingRole);
+
+        if (!user.IsDeleted)
+        {
+            throw new ConflictException("This user is not deleted.");
+        }
+
+        user.IsDeleted = false;
+        await _context.SaveChangesAsync();
+
+        return UserResponseDto.FromEntity(user);
+    }
+
+    // LOGIN: verifies the hashed password. Also carries a one-time,
+    // just-in-time migration for the handful of users seeded before hashing
+    // existed — if the stored value isn't in our hash format yet, fall back
+    // to a direct string comparison, and only upon a successful match
+    // (i.e. we've just cryptographically proven the plaintext value was
+    // correct) rehash it in place. No row is ever touched otherwise.
     public async Task<UserResponseDto> LoginAsync(LoginDto dto)
     {
         var user = await _context.users
-            .FirstOrDefaultAsync(u => u.Username == dto.Username && u.Password == dto.Password);
+            .FirstOrDefaultAsync(u => u.Username == dto.Username && !u.IsDeleted);
 
         if (user is null)
+        {
+            throw new UnauthorizedException("Invalid username or password.");
+        }
+
+        bool passwordOk;
+        if (_passwordHasher.IsHashed(user.Password))
+        {
+            passwordOk = _passwordHasher.Verify(dto.Password, user.Password);
+        }
+        else
+        {
+            passwordOk = user.Password == dto.Password;
+            if (passwordOk)
+            {
+                user.Password = _passwordHasher.Hash(dto.Password);
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException)
+                {
+                    // The legacy-password upgrade is a nice-to-have, not the
+                    // thing being verified — a transient save failure here
+                    // must never turn an otherwise-successful login into an
+                    // error. It'll simply be retried on their next login.
+                }
+            }
+        }
+
+        if (!passwordOk)
         {
             throw new UnauthorizedException("Invalid username or password.");
         }
@@ -170,7 +245,7 @@ public class UserService : IUserService
     // unlike UpdateAsync, which is why this is its own endpoint rather than
     // reusing PUT /api/users/{id} (that requires a Password the acting
     // Admin doesn't have, since it's never returned to the client).
-    public async Task<UserResponseDto> PromoteToAdminAsync(int id, AdminActionDto dto)
+    public async Task<UserResponseDto> PromoteToAdminAsync(int id, int actingUserId, string actingRole)
     {
         var target = await _context.users.FindAsync(id);
         if (target is null)
@@ -178,7 +253,7 @@ public class UserService : IUserService
             throw new NotFoundException($"User with id {id} was not found.");
         }
 
-        await EnsureActingAdminOrHigherAsync(dto);
+        EnsureActingAdminOrHigher(actingRole);
 
         if (target.Role == UserRole.SuperAdmin)
         {
@@ -194,7 +269,7 @@ public class UserService : IUserService
     // DEMOTE: Admin/SuperAdmin only. Reverts any Admin back to a regular
     // User. SuperAdmin is protected — it can never be demoted by anyone,
     // including another SuperAdmin.
-    public async Task<UserResponseDto> DemoteToUserAsync(int id, AdminActionDto dto)
+    public async Task<UserResponseDto> DemoteToUserAsync(int id, int actingUserId, string actingRole)
     {
         var target = await _context.users.FindAsync(id);
         if (target is null)
@@ -202,7 +277,7 @@ public class UserService : IUserService
             throw new NotFoundException($"User with id {id} was not found.");
         }
 
-        await EnsureActingAdminOrHigherAsync(dto);
+        EnsureActingAdminOrHigher(actingRole);
 
         if (target.Role == UserRole.SuperAdmin)
         {
@@ -215,26 +290,18 @@ public class UserService : IUserService
         return UserResponseDto.FromEntity(target);
     }
 
-    // Shared by PromoteToAdminAsync/DemoteToUserAsync/DeleteAsync: confirm
-    // the acting user is real and at least an Admin (Admin or SuperAdmin —
-    // SuperAdmin has every Admin power plus more). Same placeholder role
-    // check used by OrderService's Confirm/Complete/Cancel — not real
-    // security, since any client can just claim a role until the Auth bonus
-    // adds real login.
-    private async Task EnsureActingAdminOrHigherAsync(AdminActionDto dto)
+    // Shared by PromoteToAdminAsync/DemoteToUserAsync/DeleteAsync/
+    // RestoreAsync: confirm the acting role (read straight from the
+    // caller's validated JWT, not a client-supplied field) is at least an
+    // Admin (Admin or SuperAdmin — SuperAdmin has every Admin power plus
+    // more). The controller's [Authorize(Roles = "Admin,SuperAdmin")]
+    // already enforces this before the request even reaches here — this is
+    // a defense-in-depth check at the service boundary, same pattern used
+    // by OrderService/ProductService.
+    private static void EnsureActingAdminOrHigher(string actingRole)
     {
-        var actingUser = await _context.users.FindAsync(dto.ActingUserId);
-        if (actingUser is null)
-        {
-            throw new NotFoundException($"User with id {dto.ActingUserId} was not found.");
-        }
-
-        if (!Enum.TryParse<UserRole>(dto.Role, ignoreCase: true, out var role))
-        {
-            throw new ArgumentException($"'{dto.Role}' is not a valid role. Use 'User', 'Admin', or 'SuperAdmin'.");
-        }
-
-        if (role != UserRole.Admin && role != UserRole.SuperAdmin)
+        if (!Enum.TryParse<UserRole>(actingRole, ignoreCase: true, out var role)
+            || (role != UserRole.Admin && role != UserRole.SuperAdmin))
         {
             throw new ForbiddenException("Only an Admin can perform this action on another user.");
         }

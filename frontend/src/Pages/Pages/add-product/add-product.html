@@ -1,0 +1,65 @@
+<div class="mx-auto max-w-lg p-6">
+  <a routerLink="/products" class="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400">← Back to products</a>
+
+  <h1 class="mt-3 mb-5 text-2xl font-semibold">Add a new product</h1>
+
+  <div class="text-gray-500 dark:text-gray-400" *ngIf="!auth.currentUser() || !isAdmin">Only Admins can add products.</div>
+
+  <form class="card-surface flex flex-col gap-4 p-6" *ngIf="isAdmin" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="rounded-lg bg-badge-red-bg px-3 py-2 text-sm text-badge-red-text" *ngIf="error()">{{ error() }}</div>
+
+    <div>
+      <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Name</label>
+      <input
+        type="text"
+        formControlName="name"
+        class="w-full rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
+        [class.border-red-400]="name.invalid && name.touched"
+        [class.border-gray-300]="!(name.invalid && name.touched)"
+      />
+      <p class="mt-1 text-xs text-red-600" *ngIf="name.invalid && name.touched">Name is required.</p>
+    </div>
+
+    <div>
+      <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Description</label>
+      <input type="text" formControlName="description" class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500" />
+    </div>
+
+    <div>
+      <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Price</label>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        formControlName="price"
+        class="w-full rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
+        [class.border-red-400]="price.invalid && price.touched"
+        [class.border-gray-300]="!(price.invalid && price.touched)"
+      />
+      <p class="mt-1 text-xs text-red-600" *ngIf="price.hasError('required') && price.touched">Price is required.</p>
+      <p class="mt-1 text-xs text-red-600" *ngIf="price.hasError('min') && price.touched">Price cannot be negative.</p>
+    </div>
+
+    <div>
+      <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Initial quantity</label>
+      <input
+        type="number"
+        min="0"
+        formControlName="quantity"
+        class="w-full rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
+        [class.border-red-400]="quantity.invalid && quantity.touched"
+        [class.border-gray-300]="!(quantity.invalid && quantity.touched)"
+      />
+      <p class="mt-1 text-xs text-red-600" *ngIf="quantity.hasError('required') && quantity.touched">Quantity is required.</p>
+      <p class="mt-1 text-xs text-red-600" *ngIf="quantity.hasError('min') && quantity.touched">Quantity cannot be negative.</p>
+    </div>
+
+    <button
+      type="submit"
+      class="mt-1 h-10 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+      [disabled]="loading()"
+    >
+      {{ loading() ? 'Adding…' : 'Add Product' }}
+    </button>
+  </form>
+</div>
